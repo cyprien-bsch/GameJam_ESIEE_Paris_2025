@@ -1,6 +1,7 @@
 import arcade
 from entities.player import Player
 from entities.enemy import Enemy, Direction
+from entities.knight import Knight
 from enum import Enum
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT
 import random
@@ -28,6 +29,7 @@ class GameWindow(arcade.Window):
     def __init__(self, width, height, title):
         super().__init__(width, height, title)
         self.player = arcade.SpriteList()
+        self.knight = arcade.SpriteList()
         #left and right enemies for direction
         self.enemies = [arcade.SpriteList(), arcade.SpriteList()]
         #left and right projectiles 
@@ -64,6 +66,7 @@ class GameWindow(arcade.Window):
 
     def setup(self):
         self.player.append(Player(100, 100, self.solid_decorations))
+        self.knight.append(Knight(200, 200, Direction.RIGHT, self.projectiles[1]))
         self.enemies[0].append(Enemy(400, 300, Direction.LEFT, self.projectiles[0]))
         self.enemies[1].append(Enemy(600, 300, Direction.RIGHT, self.projectiles[1]))
         self.background = arcade.load_texture("assets/images/background.png")
@@ -79,6 +82,7 @@ class GameWindow(arcade.Window):
                 angle=0, alpha=255
             )
             self.player.draw()
+            self.knight.draw()
             for enemy_list in self.enemies:
                 enemy_list.draw()
             for projectile_list in self.projectiles:
@@ -125,13 +129,15 @@ class GameWindow(arcade.Window):
 
 
         self.player.update(delta_time)
+        self.knight.update(delta_time)
         for enemy_list in self.enemies:
             enemy_list.update(delta_time)
         for projectile_list in self.projectiles:
             projectile_list.update(delta_time)
         self.check_collision()
 
-        self.center_camera_to_sprite(self.enemies[0][0] if len(self.enemies[0]) > 0 else self.enemies[1][0] if len(self.enemies[1]) > 0 else self.player[0])
+        self.center_camera_to_sprite(self.knight[0] if len(self.knight) > 0 else self.player[0])
+        #self.center_camera_to_sprite(self.enemies[0][0] if len(self.enemies[0]) > 0 else self.enemies[1][0] if len(self.enemies[1]) > 0 else self.player[0])
 
 
     def on_key_press(self, symbol, modifiers):
