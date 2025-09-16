@@ -15,7 +15,7 @@ class Player(arcade.Sprite):
         self.frame_width = 40
         self.frame_height = 48
         self.columns = 4  # nombre de frames par ligne
-        self.directions = ["down", "up", "right", "left"]
+        self.directions = ["left", "right", "up", "down"]
 
         # Chargement des textures avec l'utilitaire
         idle_textures = AnimationUtil.load_textures_from_spritesheet(
