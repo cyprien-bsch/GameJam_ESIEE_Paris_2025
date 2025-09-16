@@ -1,30 +1,138 @@
 import arcade
 from entities.player import Player
-from entities.enemy import Enemy
+from entities.enemy import Enemy, Direction
+from enum import Enum
+from settings import SCREEN_WIDTH, SCREEN_HEIGHT
+import random
+
+class GamePhase(Enum):
+    MENU = 1
+    REST = 2
+    WAR_START = 3
+    IN_WAR = 4
+    WAR_END = 5
+    GAME_OVER = 0
+
+def phase_length(phase: GamePhase) -> int:
+    if phase == GamePhase.REST:
+        return 10
+    if phase == GamePhase.WAR_START:
+        return 5
+    if phase == GamePhase.IN_WAR:
+        return 20
+    if phase == GamePhase.WAR_END:
+        return 3
+    return 0
 
 class GameWindow(arcade.Window):
     def __init__(self, width, height, title):
         super().__init__(width, height, title)
         self.player = arcade.SpriteList()
-        self.enemies = arcade.SpriteList()
+        #left and right enemies for direction
+        self.enemies = [arcade.SpriteList(), arcade.SpriteList()]
+        #left and right projectiles 
+        self.projectiles = [arcade.SpriteList(), arcade.SpriteList()]
+        self.solid_decorations = arcade.SpriteList()
+        self.background = None
         self.set_mouse_visible(True)
+        self.phase = GamePhase.MENU
+        self.phase_timer = 0
+        self.camera = arcade.camera.Camera2D()  # caméra pour la scène
+        self.gui_camera = arcade.camera.Camera2D()  # caméra fixe pour HUD
+
+    def center_camera_to_sprite(self, sprite: arcade.Sprite):
+        target_pos = (sprite.center_x, sprite.center_y)
+        # La caméra 2D prend des coordonnées "world"
+        self.camera.position = target_pos
+
+
+    def cycle_phase(self):
+        self.phase_timer += 1
+        if self.phase_timer >= phase_length(self.phase) * 60: # assuming 60 FPS
+            self.phase_timer = 0
+            if self.phase == GamePhase.MENU:
+                self.phase = GamePhase.REST
+            elif self.phase == GamePhase.REST:
+                self.phase = GamePhase.WAR_START
+            elif self.phase == GamePhase.WAR_START:
+                self.phase = GamePhase.IN_WAR
+            elif self.phase == GamePhase.IN_WAR:
+                self.phase = GamePhase.WAR_END
+            elif self.phase == GamePhase.WAR_END:
+                self.phase = GamePhase.REST
+            print("Phase changed to:", self.phase)
 
     def setup(self):
-        self.player.append(Player(100, 100))
-        self.enemies.append(Enemy(400, 300))
+        self.player.append(Player(100, 100, self.solid_decorations))
+        self.enemies[0].append(Enemy(400, 300, Direction.LEFT, self.projectiles[0]))
+        self.enemies[1].append(Enemy(600, 300, Direction.RIGHT, self.projectiles[1]))
+        self.background = arcade.load_texture("assets/images/background.png")
+        for i in range(25):
+            self.solid_decorations.append(arcade.Sprite(":resources:/images/tiles/rock.png", 0.5, center_x=random.random()*SCREEN_WIDTH, center_y=random.random()*SCREEN_HEIGHT))
 
     def on_draw(self):
         self.clear()
-        self.player.draw()
-        self.enemies.draw()
+        with self.camera.activate():
+            arcade.draw_texture_rect(
+                self.background,
+                rect=arcade.LBWH(-self.width, -self.height, self.width * 2, self.height * 2),
+                angle=0, alpha=255
+            )
+            self.player.draw()
+            for enemy_list in self.enemies:
+                enemy_list.draw()
+            for projectile_list in self.projectiles:
+                projectile_list.draw()
+            
+            self.solid_decorations.draw()
 
-    def on_update(self, delta_time):
-        self.player.update()
-        self.enemies.update()
-        if arcade.check_for_collision_with_list(self.player[0], self.enemies):
+        with self.gui_camera.activate():
+            arcade.draw_text(f"Phase: {self.phase.name}", 10, self.height - 20, arcade.color.WHITE, 14)
+
+
+    # Check collisions and do actions for each
+    def check_collision(self):
+        if (arcade.check_for_collision_with_list(self.player[0], self.enemies[0])
+        or arcade.check_for_collision_with_list(self.player[0], self.enemies[1])
+        or arcade.check_for_collision_with_list(self.player[0], self.projectiles[0])
+        or arcade.check_for_collision_with_list(self.player[0], self.projectiles[1])):
             self.player[0].color = arcade.color.RED
         else: 
             self.player[0].color = arcade.color.WHITE
+        
+        for left_enemy in self.enemies[0]:
+            if arcade.check_for_collision_with_list(left_enemy, self.projectiles[1]):
+                left_enemy.remove_from_sprite_lists()
+        for right_enemy in self.enemies[1]:
+            if arcade.check_for_collision_with_list(right_enemy, self.projectiles[0]):
+                right_enemy.remove_from_sprite_lists()
+
+    # Update all game objects each frame (delta time is time since last update)
+    def on_update(self, delta_time):
+        self.cycle_phase()
+        
+        if self.phase == GamePhase.WAR_START:
+            if random.random() < 0.1:
+                self.enemies[0].append(Enemy(800, 100 + 400 * random.random(), Direction.LEFT, self.projectiles[0]))
+            if random.random() < 0.1:
+                self.enemies[1].append(Enemy(0, 100 + 400 * random.random(), Direction.RIGHT, self.projectiles[1]))
+        
+        if self.phase == GamePhase.WAR_END:
+            self.enemies[0].clear()
+            self.enemies[1].clear()
+            self.projectiles[0].clear()
+            self.projectiles[1].clear()
+
+
+        self.player.update(delta_time)
+        for enemy_list in self.enemies:
+            enemy_list.update(delta_time)
+        for projectile_list in self.projectiles:
+            projectile_list.update(delta_time)
+        self.check_collision()
+
+        self.center_camera_to_sprite(self.enemies[0][0] if len(self.enemies[0]) > 0 else self.enemies[1][0] if len(self.enemies[1]) > 0 else self.player[0])
+
 
     def on_key_press(self, symbol, modifiers):
         if symbol == arcade.key.ESCAPE:
