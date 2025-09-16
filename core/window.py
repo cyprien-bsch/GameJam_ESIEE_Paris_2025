@@ -66,7 +66,7 @@ class GameWindow(arcade.Window):
 
     def setup(self):
         self.player.append(Player(100, 100, self.solid_decorations))
-        self.knight.append(Knight(200, 200, Direction.RIGHT, self.projectiles[1]))
+        self.knight.append(Knight(200, 200))
         self.enemies[0].append(Enemy(400, 300, Direction.LEFT, self.projectiles[0]))
         self.enemies[1].append(Enemy(600, 300, Direction.RIGHT, self.projectiles[1]))
         self.background = arcade.load_texture("assets/images/background.png")
