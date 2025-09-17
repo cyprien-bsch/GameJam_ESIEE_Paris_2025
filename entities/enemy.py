@@ -22,7 +22,7 @@ class Enemy(arcade.Sprite):
         self.target = None
         self.projectiles = projectiles if projectiles is not None else arcade.SpriteList()
         self.targets = targets if targets is not None else arcade.SpriteList()
-        self.target_distance_limit = 300
+        self.target_distance_limit = 500
 
 
     def distance(self, enemy):
@@ -37,7 +37,7 @@ class Enemy(arcade.Sprite):
         nearest_target = None
 
         for target in self.targets:
-            current_distance = self.distance(self.targets)
+            current_distance = self.distance(target)
             if (current_distance < minimal_distance):
                 nearest_target = target
                 current_distance = minimal_distance
@@ -93,24 +93,6 @@ class Enemy(arcade.Sprite):
         elif self.center_y > settings.SCREEN_HEIGHT:
             self.center_y = 0
         
-        if random.random() < 0.01:
-            self.shoot()
-        
-        self.moving += 1
-        if (self.moving > 300 and random.random() < 0.01):
-            self.update_direction()
 
 
-    def shoot(self):
-        dir_x, dir_y = 0, 0
-        if self.direction == Direction.RIGHT:
-            dir_x = 1
-        if self.direction == Direction.LEFT:
-            dir_x = -1
-        if self.direction == Direction.BOTTOM:
-            dir_y = 1
-        if self.direction == Direction.TOP:
-            dir_y = -1
-        
-        projectile = Projectile(self.center_x, self.center_y, 5 * dir_x, 5 * dir_y)
-        self.projectiles.append(projectile)
+    
