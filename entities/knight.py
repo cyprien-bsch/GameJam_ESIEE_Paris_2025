@@ -9,21 +9,21 @@ import math
  
 
 class Knight(BaseCharacter):
-    def __init__(self, x: float, y: float, solid_decorations: arcade.SpriteList, enemy_lists: list[arcade.SpriteList]):
+    def __init__(self, x: float, y: float, solid_decorations: arcade.SpriteList = None, enemy_lists: list[arcade.SpriteList] = None):
         super().__init__()
         self.center_x = x
         self.center_y = y
         self.direction = Direction.RIGHT
         self.cell_size = 32
         self.speed = 64
-        self.solid_decorations = solid_decorations  # Liste des obstacles
+        self.solid_decorations = solid_decorations if solid_decorations is not None else arcade.SpriteList()  # Liste des obstacles
         self.path = [
             (Direction.RIGHT, 10),
             (Direction.UP, 5),
             (Direction.LEFT, 20),
             (Direction.UP, 5)
         ]
-        self.enemy_lists = enemy_lists
+        self.enemy_lists = enemy_lists if enemy_lists is not None else []
         self.current_step = 0
         self.steps_moved = 0
         self.mood = "idle"  # "idle", "walk", "attack"
