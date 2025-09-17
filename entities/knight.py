@@ -16,29 +16,22 @@ class Direction(Enum):
     DOWN_LEFT = 7
 
 class Knight(arcade.Sprite):
-    def __init__(self, x: float, y: float):
+    def __init__(self, x: float, y: float, solid_decorations: arcade.SpriteList):
         super().__init__()
         self.center_x = x
         self.center_y = y
         self.direction = Direction.RIGHT
-
-        # Paramètres de mouvement
-        self.cell_size = 32       # Taille d’une case en pixels
-        self.speed = 64           # Pixels/seconde
+        self.cell_size = 32
+        self.speed = 64
+        self.solid_decorations = solid_decorations  # Liste des obstacles
         self.path = [
-            (Direction.RIGHT, 5),  
-            (Direction.UP, 3),     
-            (Direction.LEFT, 5),   
-            (Direction.UP, 2),
-            (Direction.UP_RIGHT, 4), 
-            (Direction.UP_LEFT, 4), 
-            (Direction.DOWN_LEFT, 4),
-            (Direction.DOWN_RIGHT, 4) 
-
+            (Direction.RIGHT, 5),
+            (Direction.UP, 3),
+            (Direction.LEFT, 5),
+            (Direction.UP, 2)
         ]
         self.current_step = 0
         self.steps_moved = 0
-
         self.init_anim_frames()
 
 
@@ -103,13 +96,13 @@ class Knight(arcade.Sprite):
             self.update_animation(delta_time)
             self.current_step = 0
             self.steps_moved = 0
+            return
 
         self.state = "walk"
-
         dir_target, steps_target = self.path[self.current_step]
         self.direction = dir_target
 
-        # Déplacement
+        # Calcul du déplacement
         dx, dy = 0, 0
         if dir_target == Direction.RIGHT:
             dx = 1
@@ -119,30 +112,31 @@ class Knight(arcade.Sprite):
             dy = 1
         elif dir_target == Direction.DOWN:
             dy = -1
-        elif dir_target == Direction.UP_RIGHT:
-            dx, dy = 1, 1
-        elif dir_target == Direction.UP_LEFT:
-            dx, dy = -1, 1
-        elif dir_target == Direction.DOWN_RIGHT:
-            dx, dy = 1, -1
-        elif dir_target == Direction.DOWN_LEFT:
-            dx, dy = -1, -1
 
-        # Normalisation diagonale (pour ne pas aller 1.4x plus vite)
+        # Normalisation diagonale
         if dx != 0 and dy != 0:
             norm = (2 ** 0.5)
             dx /= norm
             dy /= norm
 
-        self.center_x += dx * self.speed * delta_time
-        self.center_y += dy * self.speed * delta_time
+        move_x = dx * self.speed * delta_time
+        move_y = dy * self.speed * delta_time
 
-        # Compte cases parcourues
+        # Déplacement avec collision
+        self.center_x += move_x
+        if arcade.check_for_collision_with_list(self, self.solid_decorations):
+            self.center_x -= move_x  # Reculer si collision
+
+        self.center_y += move_y
+        if arcade.check_for_collision_with_list(self, self.solid_decorations):
+            self.center_y -= move_y  # Reculer si collision
+
+        # Compte des cases parcourues
         self.steps_moved += self.speed * delta_time / self.cell_size
         if self.steps_moved >= steps_target:
             self.current_step += 1
             self.steps_moved = 0
-        
+
         self.update_animation(delta_time)
 
         self.max_health = 5
