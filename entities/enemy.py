@@ -23,6 +23,12 @@ class Enemy(arcade.Sprite):
         self.projectiles = projectiles if projectiles is not None else arcade.SpriteList()
         self.targets = targets if targets is not None else arcade.SpriteList()
         self.target_distance_limit = 500
+        self.is_dead = False
+
+    def die(self):
+        self.is_dead = True
+        self.alpha = 50
+        
 
 
     def distance(self, enemy):
@@ -36,11 +42,12 @@ class Enemy(arcade.Sprite):
         current_distance, minimal_distance = 0, self.target_distance_limit
         nearest_target = None
 
+
         for target in self.targets:
             current_distance = self.distance(target)
-            if (current_distance < minimal_distance):
+            if (current_distance < minimal_distance) and target.is_dead == False:
                 nearest_target = target
-                current_distance = minimal_distance
+                minimal_distance = current_distance
         
         if nearest_target is not None:
             return self.center_x - nearest_target.center_x, self.center_y - nearest_target.center_y
@@ -48,6 +55,9 @@ class Enemy(arcade.Sprite):
 
 
     def update_direction(self):
+        if self.is_dead:
+            self.alpha = 50
+            return
         self.moving = 0
 
         self.target = self.nearest_target()
@@ -69,6 +79,9 @@ class Enemy(arcade.Sprite):
             
 
     def update(self, delta_time = None):
+        if self.is_dead:
+            self.alpha = 50
+            return
         if self.direction == Direction.RIGHT:
             self.center_x += 1
         elif self.direction == Direction.LEFT:
