@@ -42,6 +42,7 @@ class GameWindow(arcade.Window):
         self.camera = arcade.camera.Camera2D()
         self.gui_camera = arcade.camera.Camera2D()
         self.dialogue_manager = Dialogue()
+        self.paused = False 
 
         # Gestionnaire UI
         self.ui_manager = UIManager()
@@ -96,7 +97,6 @@ class GameWindow(arcade.Window):
                 anchor_x="center",
                 anchor_y="center"
             )
-            # Bouton Play affiché par UIManager automatiquement
             self.ui_manager.draw()
             return
 
@@ -117,6 +117,26 @@ class GameWindow(arcade.Window):
         with self.gui_camera.activate():
             arcade.draw_text(f"Phase: {self.phase.name}", 10, self.height - 20, arcade.color.WHITE, 14)
             self.dialogue_manager.draw(self.width, self.height)
+
+            if self.paused:
+                
+                arcade.draw_lrbt_rectangle_filled(
+                    0, self.width, 0, self.height,
+                    (0, 0, 0, 150)  # noir semi-transparent
+                )
+
+            
+                pause_texture = arcade.load_texture("assets/images/pause_button.png")
+                arcade.draw_texture_rect(
+                pause_texture,
+                rect=arcade.LBWH(
+                self.width // 2-32, 
+                self.height // 2-32,   
+                64,
+                64
+            ),
+            angle=0
+        )
 
     def is_in_collidable_objects(self, sprite: arcade.Sprite) -> bool:
         return arcade.check_for_collision_with_list(sprite, self.solid_decorations) or \
@@ -142,6 +162,9 @@ class GameWindow(arcade.Window):
             self.dialogue_manager.start("knight_intro")
 
     def on_update(self, delta_time):
+        if self.paused:
+            return
+        
         self.cycle_phase()
         if self.phase == GamePhase.WAR_START:
             if random.random() < 0.1:
@@ -180,13 +203,18 @@ class GameWindow(arcade.Window):
         self.setup()
 
     def on_key_press(self, symbol, modifiers):
-        if symbol == arcade.key.ESCAPE:
-            arcade.close_window()
+        
         if self.phase != GamePhase.MENU:
+            if symbol == arcade.key.ESCAPE:
+                self.paused = not self.paused
+                return
+            
             if symbol in [arcade.key.UP, arcade.key.DOWN, arcade.key.LEFT, arcade.key.RIGHT,
                           arcade.key.SPACE, arcade.key.Z, arcade.key.Q, arcade.key.S, arcade.key.D]:
-                self.player[0].on_key_press(symbol, modifiers)
-                self.player.update()
+                if not self.paused:  
+                    self.player[0].on_key_press(symbol, modifiers)
+                    self.player.update()
+
             if symbol == arcade.key.ENTER:
                 self.dialogue_manager.advance()
 
