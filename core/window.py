@@ -48,12 +48,21 @@ class GameWindow(arcade.Window):
         self.physics_engine = None
         self.dialogue_manager = Dialogue()
         self.paused = False 
+        self._bgm_sound = None
+        self._bgm_player = None
 
         # Gestionnaire UI
         self.ui_manager = UIManager()
         self.ui_manager.enable()
         self.play_button = None
         self.setup_menu()
+
+        # Background music: load and start looping immediately (menu + gameplay)
+        try:
+            self._bgm_sound = arcade.Sound("assets/music/broom&doom_main_theme.mp3", streaming=True)
+            self._bgm_player = self._bgm_sound.play(loop=True, volume=0.6)
+        except Exception as e:
+            print(f"Warning: failed to start background music: {e}")
 
     def center_camera_to_sprite(self, sprite: arcade.Sprite):
         self.camera.position = (sprite.center_x, sprite.center_y)
@@ -312,3 +321,18 @@ class GameWindow(arcade.Window):
 
         # Ajouter le layout au UIManager
         self.ui_manager.add(layout)
+
+    def on_close(self):
+        # Stop background music when closing the window
+        try:
+            if self._bgm_player is not None:
+                self._bgm_player.pause()
+                self._bgm_player = None
+        except Exception:
+            pass
+        try:
+            if self._bgm_sound is not None:
+                self._bgm_sound = None
+        except Exception:
+            pass
+        return super().on_close()
