@@ -4,6 +4,8 @@ from entities.player import Player
 from entities.enemy import Enemy, Direction
 from entities.knight import Knight
 from utils.dialogue import Dialogue
+from entities.archer import Archer
+from entities.projectiles import Projectile
 from enum import Enum
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT
 import random
@@ -18,7 +20,7 @@ class GamePhase(Enum):
 
 def phase_length(phase: GamePhase) -> int:
     if phase == GamePhase.REST:
-        return 10
+        return 1
     if phase == GamePhase.WAR_START:
         return 5
     if phase == GamePhase.IN_WAR:
@@ -119,7 +121,7 @@ class GameWindow(arcade.Window):
             print(f"Warning: failed to parse collisions from TMX: {e}")
 
         # 3) Create player and physics using the collision sprites
-        player_sprite = Player(100, 100, self.solid_decorations)
+        player_sprite = Player(100, 100, self.solid_decorations, self.enemies)
         player_sprite.scale = 2
         self.player.append(player_sprite)
 
@@ -175,10 +177,10 @@ class GameWindow(arcade.Window):
         
         for left_enemy in self.enemies[0]:
             if arcade.check_for_collision_with_list(left_enemy, self.projectiles[1]):
-                left_enemy.remove_from_sprite_lists()
+                left_enemy.die()
         for right_enemy in self.enemies[1]:
             if arcade.check_for_collision_with_list(right_enemy, self.projectiles[0]):
-                right_enemy.remove_from_sprite_lists()
+                right_enemy.die()
 
         # Quand collision avec le knight
         if arcade.check_for_collision_with_list(self.player[0], self.knight):
@@ -191,11 +193,11 @@ class GameWindow(arcade.Window):
         self.cycle_phase()
         
         if self.phase == GamePhase.WAR_START:
-            if random.random() < 0.1:
-                self.enemies[0].append(Enemy(800, 100 + 400 * random.random(), Direction.LEFT, self.projectiles[0]))
-            if random.random() < 0.1:
-                self.enemies[1].append(Enemy(0, 100 + 400 * random.random(), Direction.RIGHT, self.projectiles[1]))
-        
+            if random.random() < 0.02:
+                self.enemies[0].append(Archer(800, 100 + 400 * random.random(), Direction.LEFT, self.projectiles[0], self.enemies[1], image="assets/images/Archer_Red.png"))
+            if random.random() < 0.02:
+                self.enemies[1].append(Archer(0, 100 + 400 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0], image="assets/images/Archer_Yellow.png"))
+
         if self.phase == GamePhase.WAR_END:
             self.enemies[0].clear()
             self.enemies[1].clear()
