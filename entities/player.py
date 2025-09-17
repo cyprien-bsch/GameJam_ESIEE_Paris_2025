@@ -18,7 +18,7 @@ class Player(arcade.Sprite):
         # Brooming attributes
         self.brooming_enemy = None
         self.broom_timer = 0.0
-        self.BROOM_TIME_TO_REMOVE = 3.0
+        self.BROOM_TIME_TO_REMOVE = 1.0
 
         self.init_anim_frames()
 
