@@ -24,7 +24,7 @@ class Player(arcade.Sprite):
         # Brooming attributes
         self.brooming_enemy = None
         self.broom_timer = 0.0
-        self.BROOM_TIME_TO_REMOVE = 3.0
+        self.BROOM_TIME_TO_REMOVE = 1.0
 
         self.init_anim_frames()
 
@@ -175,7 +175,7 @@ class Player(arcade.Sprite):
         )
 
         spacing = 10   # espace entre les coeurs
-        offset_y = 40  # hauteur au-dessus du joueur
+        offset_y = 10  # hauteur au-dessus du joueur
         for i in range(self.current_health):
             arcade.draw_texture_rect(
                 self.heart_texture,
