@@ -14,11 +14,16 @@ class Peon(Enemy):
         self.scale = 0.5
 
 
+    def die(self):
+        super().die()
+
     def sword_attack(self):
-        self.target.remove_from_sprite_lists()
+        self.target.die()
 
 
     def update(self, delta_time = None):
+        if self.is_dead:
+            return
         self.target = self.nearest_target()
         self.attack_timer += 1
         if self.target is None:
