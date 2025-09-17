@@ -40,8 +40,15 @@ class Enemy(BaseCharacter):
         nearest_target = None
 
         for target in self.targets:
+            # Skip dead targets
+            if hasattr(target, 'is_dead') and target.is_dead:
+                continue
+            # Skip targets with 0 health
+            if hasattr(target, 'current_health') and target.current_health <= 0:
+                continue
+                
             current_distance = self.distance(target)
-            if (current_distance < minimal_distance) and target.is_dead == False:
+            if current_distance < minimal_distance:
                 nearest_target = target
                 minimal_distance = current_distance
         

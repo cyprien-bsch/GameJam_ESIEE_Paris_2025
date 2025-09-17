@@ -21,7 +21,17 @@ class Player(arcade.Sprite):
         self.broom_timer = 0.0
         self.BROOM_TIME_TO_REMOVE = 1.0
 
+        # Health system
+        self.max_health = 3
+        self.current_health = self.max_health
+        self.is_dead = False
         self.init_anim_frames()
+
+    def die(self):
+        """Handle player death"""
+        self.is_dead = True
+        self.current_health = 0
+        self.alpha = 128  # Make player semi-transparent when dead
 
     def init_anim_frames(self):
         # Taille d'une frame
@@ -226,14 +236,21 @@ class Player(arcade.Sprite):
 
     # --- Vie ---
     def take_damage(self, amount=1):
-        if self.invincible_timer <= 0:  # applique les dégâts seulement si pas invincible
-            self.current_health = max(0, self.current_health - amount)
-            self.invincible_timer = 1.0  # 1 seconde d'invincibilité
-            
-            # Trigger hit feedback effects
-            self.hit_flash_timer = self.hit_flash_duration
-            self.color = (255, 100, 100)  # Flash red
-            self.blink_timer = 0.0  # Reset blink timer
+        """Handle taking damage"""
+        if self.is_dead or self.invincible_timer > 0:
+            return
+        
+        self.current_health = max(0, self.current_health - amount)
+        self.invincible_timer = 1.0  # 1 seconde d'invincibilité
+        
+        # Trigger hit feedback effects
+        self.hit_flash_timer = self.hit_flash_duration
+        self.color = (255, 100, 100)  # Flash red
+        self.blink_timer = 0.0  # Reset blink timer
+        
+        # Check if player should die
+        if self.current_health <= 0:
+            self.die()
 
     def heal(self, amount=1):
         self.current_health = min(self.max_health, self.current_health + amount)

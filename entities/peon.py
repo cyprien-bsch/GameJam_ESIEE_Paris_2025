@@ -94,7 +94,11 @@ class Peon(Enemy):
         if self.target is not None:
             self.state = "attack"
             self.frame_index = 0
-            self.target.die()
+            # Use take_damage method if available, otherwise use die method
+            if hasattr(self.target, 'take_damage'):
+                self.target.take_damage(1)
+            else:
+                self.target.die()
 
 
     def update(self, delta_time = None):
