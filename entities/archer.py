@@ -1,4 +1,5 @@
-from entities.enemy import Enemy, Direction
+from entities.enemy import Enemy
+from entities.direction import Direction
 from entities.projectiles import Projectile
 import math
 import arcade
@@ -42,20 +43,20 @@ class Archer(Enemy):
             "idle": {
                 Direction.RIGHT: right_facing_textures["idle"],
                 Direction.LEFT: left_facing_textures["idle"],
-                Direction.TOP: right_facing_textures["idle"],
-                Direction.BOTTOM: left_facing_textures["idle"],
+                Direction.UP: right_facing_textures["idle"],
+                Direction.DOWN: left_facing_textures["idle"],
             },
             "walk": {
                 Direction.RIGHT: right_facing_textures["walk"],
                 Direction.LEFT: left_facing_textures["walk"],
-                Direction.TOP: right_facing_textures["walk"],
-                Direction.BOTTOM: left_facing_textures["walk"],
+                Direction.UP: right_facing_textures["walk"],
+                Direction.DOWN: left_facing_textures["walk"],
             },
             "shoot": {
                 Direction.RIGHT: right_facing_textures["shoot"],
                 Direction.LEFT: left_facing_textures["shoot"],
-                Direction.TOP: right_facing_textures["shoot"],
-                Direction.BOTTOM: left_facing_textures["shoot"],
+                Direction.UP: right_facing_textures["shoot"],
+                Direction.DOWN: left_facing_textures["shoot"],
             }
         }
 

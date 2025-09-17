@@ -1,21 +1,14 @@
 import arcade
-from enum import Enum
+from entities.direction import Direction
+from entities.base_character import BaseCharacter
 import random
 from entities.projectiles import Projectile
 from utils.animation import AnimationUtil
 
 
-class Direction(Enum):
-    LEFT = 0
-    RIGHT = 1
-    UP = 2
-    DOWN = 3
-    UP_RIGHT = 4
-    UP_LEFT = 5
-    DOWN_RIGHT = 6
-    DOWN_LEFT = 7
+ 
 
-class Knight(arcade.Sprite):
+class Knight(BaseCharacter):
     def __init__(self, x: float, y: float):
         super().__init__()
         self.center_x = x
@@ -145,14 +138,4 @@ class Knight(arcade.Sprite):
         
         self.update_animation(delta_time)
 
-        self.max_health = 5
-        self.current_health = self.max_health
-
-    def take_damage(self, amount=1):
-        self.current_health = max(0, self.current_health - amount)
-
-    def heal(self, amount=1):
-        self.current_health = min(self.max_health, self.current_health + amount)
-
-
-        self.update_animation(delta_time)
+        
