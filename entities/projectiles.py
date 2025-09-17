@@ -10,11 +10,14 @@ class Projectile(arcade.Sprite):
         self.change_x = dx
         self.change_y = dy
         self.angle = math.degrees(math.atan2(-self.change_y, self.change_x))
+        self.total_distance = 0
+        self.max_distance = 500
 
     def update(self, delta_time=None):
         self.center_x += self.change_x
         self.center_y += self.change_y
-
-        # Supprimer si sort de l’écran
-        if self.top < 0 or self.bottom > SCREEN_HEIGHT or self.right < 0 or self.left > SCREEN_WIDTH:
+        self.total_distance += math.sqrt(self.change_x**2 + self.change_y**2)
+        if self.total_distance >= self.max_distance:
             self.remove_from_sprite_lists()
+
+        

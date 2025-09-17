@@ -9,16 +9,22 @@ class Direction(Enum):
     DOWN = "down"
 
 class Player(arcade.Sprite):
-    def __init__(self, x: float, y: float, solid_decorations: arcade.SpriteList = None):
+    def __init__(self, x: float, y: float, solid_decorations: arcade.SpriteList, enemy_lists: list[arcade.SpriteList]):
         super().__init__()
         self.center_x = x
         self.center_y = y
         self.change_x = 0
         self.change_y = 0
         self.speed = 200
-        self.solid_decorations = solid_decorations if solid_decorations is not None else arcade.SpriteList()
+        self.solid_decorations = solid_decorations
+        self.enemy_lists = enemy_lists
         self.is_brooming = False
         self.direction = Direction.DOWN
+
+        # Brooming attributes
+        self.brooming_enemy = None
+        self.broom_timer = 0.0
+        self.BROOM_TIME_TO_REMOVE = 3.0
 
         self.init_anim_frames()
 
@@ -78,16 +84,37 @@ class Player(arcade.Sprite):
             self.texture = frames[self.frame_index]
 
     def update(self, delta_time = None):
-        move_x = self.change_x * (delta_time if delta_time else 1/60)
+        dt = delta_time if delta_time else 1/60
+        move_x = self.change_x * dt
 
         already_collided = arcade.check_for_collision_with_list(self, self.solid_decorations)
 
+        # Handle brooming logic
+        if self.is_brooming and self.brooming_enemy:
+            # Check if still colliding with the same enemy
+            if arcade.check_for_collision(self, self.brooming_enemy):
+                self.broom_timer += dt
+                if self.broom_timer >= self.BROOM_TIME_TO_REMOVE:
+                    self.brooming_enemy.remove_from_sprite_lists()
+                    self.brooming_enemy = None # Stop brooming
+                    self.is_brooming = False # End the action
+                    self.state = "idle"
+            else:
+                # No longer colliding, reset
+                self.brooming_enemy = None
+                self.broom_timer = 0
+            
+            # Player is locked in place while brooming an enemy
+            self.update_animation(dt)
+            return
+
+        # --- Normal Movement ---
+        move_x = self.change_x * dt
         self.center_x += move_x
         if arcade.check_for_collision_with_list(self, self.solid_decorations) and not already_collided:
             self.center_x -= move_x
 
-        move_y = self.change_y * (delta_time if delta_time else 1/60)
-
+        move_y = self.change_y * dt
         self.center_y += move_y
         if arcade.check_for_collision_with_list(self, self.solid_decorations) and not already_collided:
             self.center_y -= move_y
@@ -119,6 +146,15 @@ class Player(arcade.Sprite):
             self.frame_time = 0.1
             self.change_x = 0
             self.change_y = 0
+
+            # Check if we are starting to broom a dead enemy
+            for enemy_list in self.enemy_lists:
+                for enemy in enemy_list:
+                    # Assuming enemy has an 'is_dead' attribute
+                    if arcade.check_for_collision(self, enemy) and getattr(enemy, 'is_dead', False):
+                        self.brooming_enemy = enemy
+                        self.broom_timer = 0
+                        return # Found an enemy to broom, stop checking
             return
 
         if self.is_brooming:
@@ -137,6 +173,8 @@ class Player(arcade.Sprite):
 
         if symbol == arcade.key.SPACE:
             self.is_brooming = False
+            self.brooming_enemy = None # Clear target
+            self.broom_timer = 0 # Reset timer
             self.state = "idle"
             self.frame_index = 0
             self.frame_time = 0.1
