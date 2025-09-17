@@ -1,6 +1,8 @@
 import arcade
 from entities.player import Player
 from entities.enemy import Enemy, Direction
+from entities.archer import Archer
+from entities.projectiles import Projectile
 from enum import Enum
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT
 import random
@@ -64,10 +66,8 @@ class GameWindow(arcade.Window):
 
     def setup(self):
         self.player.append(Player(100, 100, self.solid_decorations))
-        self.enemies[0].append(Enemy(400, 300, Direction.LEFT, self.projectiles[0]))
-        self.enemies[1].append(Enemy(600, 300, Direction.RIGHT, self.projectiles[1]))
         self.background = arcade.load_texture("assets/images/background.png")
-        for i in range(25):
+        for i in range(10):
             self.solid_decorations.append(arcade.Sprite(":resources:/images/tiles/rock.png", 0.5, center_x=random.random()*SCREEN_WIDTH, center_y=random.random()*SCREEN_HEIGHT))
 
     def on_draw(self):
@@ -113,10 +113,10 @@ class GameWindow(arcade.Window):
         
         if self.phase == GamePhase.WAR_START:
             if random.random() < 0.1:
-                self.enemies[0].append(Enemy(800, 100 + 400 * random.random(), Direction.LEFT, self.projectiles[0]))
+                self.enemies[0].append(Archer(800, 100 + 400 * random.random(), Direction.LEFT, self.projectiles[0], self.enemies[1]))
             if random.random() < 0.1:
-                self.enemies[1].append(Enemy(0, 100 + 400 * random.random(), Direction.RIGHT, self.projectiles[1]))
-        
+                self.enemies[1].append(Archer(0, 100 + 400 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0]))
+
         if self.phase == GamePhase.WAR_END:
             self.enemies[0].clear()
             self.enemies[1].clear()
