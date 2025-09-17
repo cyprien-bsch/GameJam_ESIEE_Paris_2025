@@ -29,6 +29,7 @@ class Player(arcade.Sprite):
         self.init_anim_frames()
 
         self.hit_sound = arcade.load_sound("assets/sounds/Hit.m4a")
+        self.hit_sound_player = None
         
 
     def init_anim_frames(self):
@@ -164,6 +165,8 @@ class Player(arcade.Sprite):
         else:
             self.alpha = 255
 
+    
+
     def draw(self):
         arcade.draw_texture_rect(
             self.texture,
@@ -200,7 +203,9 @@ class Player(arcade.Sprite):
             self.current_health = max(0, self.current_health - amount)
             self.invincible_timer = 1.0  # 1 seconde d’invincibilité
 
-        arcade.play_sound(self.hit_sound)
+        if self.hit_sound:
+            if not self.hit_sound_player or not self.hit_sound_player.playing:
+                self.hit_sound_player = arcade.play_sound(self.hit_sound, volume=0.5)
 
     def heal(self, amount=1):
         self.current_health = min(self.max_health, self.current_health + amount)
