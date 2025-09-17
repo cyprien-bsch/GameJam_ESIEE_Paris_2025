@@ -152,11 +152,11 @@ class GameWindow(arcade.Window):
     def on_key_press(self, symbol, modifiers):
         if symbol == arcade.key.ESCAPE:
             arcade.close_window()
-        if symbol in [arcade.key.UP, arcade.key.DOWN, arcade.key.LEFT, arcade.key.RIGHT]:
+        if symbol in [arcade.key.UP, arcade.key.DOWN, arcade.key.LEFT, arcade.key.RIGHT, arcade.key.SPACE, arcade.key.Z, arcade.key.Q, arcade.key.S, arcade.key.D]:
             self.player[0].on_key_press(symbol, modifiers)
             self.player.update()
     
     def on_key_release(self, symbol, modifiers):
-        if symbol in [arcade.key.UP, arcade.key.DOWN, arcade.key.LEFT, arcade.key.RIGHT]:
+        if symbol in [arcade.key.UP, arcade.key.DOWN, arcade.key.LEFT, arcade.key.RIGHT, arcade.key.SPACE, arcade.key.Z, arcade.key.Q, arcade.key.S, arcade.key.D]:
             self.player[0].on_key_release(symbol, modifiers)
             self.player.update()
