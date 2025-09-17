@@ -74,11 +74,11 @@ class Knight(arcade.Sprite):
                 Direction.RIGHT: right_facing_textures["walk"],
                 Direction.LEFT: left_facing_textures["walk"],
                 Direction.UP: right_facing_textures["walk"],
-                Direction.DOWN: right_facing_textures["walk"],
+                Direction.DOWN: left_facing_textures["walk"],
                 Direction.UP_RIGHT: right_facing_textures["walk"],
                 Direction.UP_LEFT: left_facing_textures["walk"],
                 Direction.DOWN_RIGHT: right_facing_textures["walk"],
-                Direction.DOWN_LEFT: right_facing_textures["walk"],
+                Direction.DOWN_LEFT: left_facing_textures["walk"],
             }
         }
 

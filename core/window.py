@@ -70,7 +70,7 @@ class GameWindow(arcade.Window):
             print("Phase changed to:", self.phase)
 
     def setup(self):
-        player_sprite = Player(100, 100, self.solid_decorations)
+        player_sprite = Player(100, 100, self.solid_decorations, self.enemies)
         player_sprite.scale = 1.5
         self.player.append(player_sprite)
 
@@ -78,8 +78,6 @@ class GameWindow(arcade.Window):
         knight_sprite.scale = 2
         self.knight.append(knight_sprite)
         
-        self.enemies[0].append(Enemy(400, 300, Direction.LEFT, self.projectiles[0]))
-        self.enemies[1].append(Enemy(600, 300, Direction.RIGHT, self.projectiles[1]))
         self.background = arcade.load_texture("assets/images/background.png")
         for i in range(10):
             self.solid_decorations.append(arcade.Sprite(":resources:/images/tiles/rock.png", 0.5, center_x=random.random()*SCREEN_WIDTH, center_y=random.random()*SCREEN_HEIGHT))
@@ -125,10 +123,10 @@ class GameWindow(arcade.Window):
         
         for left_enemy in self.enemies[0]:
             if arcade.check_for_collision_with_list(left_enemy, self.projectiles[1]):
-                left_enemy.remove_from_sprite_lists()
+                left_enemy.die()
         for right_enemy in self.enemies[1]:
             if arcade.check_for_collision_with_list(right_enemy, self.projectiles[0]):
-                right_enemy.remove_from_sprite_lists()
+                right_enemy.die()
 
         # Quand collision avec le knight
         if arcade.check_for_collision_with_list(self.player[0], self.knight):
@@ -141,10 +139,12 @@ class GameWindow(arcade.Window):
         if self.phase == GamePhase.WAR_START:
             if random.random() < 0.1:
                 self.enemies[0].append(Peon(800, 100 + 400 * random.random(), Direction.LEFT, self.enemies[1]))
-                # self.enemies[0].append(Archer(800, 100 + 400 * random.random(), Direction.LEFT, self.projectiles[0], self.enemies[1]))
             if random.random() < 0.1:
                 self.enemies[1].append(Peon(0, 100 + 400 * random.random(), Direction.RIGHT, self.enemies[0]))
-                # self.enemies[1].append(Archer(0, 100 + 400 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0]))
+            if random.random() < 0.02:
+                self.enemies[0].append(Archer(800, 100 + 400 * random.random(), Direction.LEFT, self.projectiles[0], self.enemies[1], image="assets/images/Archer_Red.png"))
+            if random.random() < 0.02:
+                self.enemies[1].append(Archer(0, 100 + 400 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0], image="assets/images/Archer_Yellow.png"))
 
         if self.phase == GamePhase.WAR_END:
             self.enemies[0].clear()

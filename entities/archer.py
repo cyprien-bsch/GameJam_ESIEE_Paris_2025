@@ -3,22 +3,92 @@ from entities.projectiles import Projectile
 import math
 import arcade
 import random
+from utils.animation import AnimationUtil
+
+
+
 
 class Archer(Enemy):
-    def __init__(self, x: float, y: float, direction: Direction = Direction.LEFT, projectiles: arcade.SpriteList = None, targets: arcade.SpriteList = None):
+    def __init__(self, x: float, y: float, direction: Direction = Direction.LEFT, projectiles: arcade.SpriteList = None, targets: arcade.SpriteList = None, image: str = "assets/images/Archer_Red.png"):
         super().__init__(x, y, direction, projectiles, targets)
         self.arrow_speed = random.uniform(4, 6)
-        self.shoot_delay = random.uniform(80, 100) 
+        self.shoot_delay = 30
         self.shoot_timer = 0
         self.scale = 0.5
+        self.image = image
+
+        self.init_anim_frames()
+
+    def init_anim_frames(self):
+        # Taille d'une frame
+        self.frame_width = 192
+        self.frame_height = 192
+        self.columns = 6  # nombre de frames par ligne
+        self.anim_types = ["idle", "walk", "shoot"] # une ligne par type d'animation
+
+        # Chargement des textures (orientées vers la droite)
+        right_facing_textures = AnimationUtil.load_textures_from_spritesheet(
+            self.image,
+            self.frame_width, self.frame_height, self.columns, self.anim_types
+        )
+
+        # Création des textures orientées vers la gauche en les retournant
+        left_facing_textures = {}
+        for anim_type, textures in right_facing_textures.items():
+            left_facing_textures[anim_type] = [arcade.Texture(image=texture.image).flip_left_right() for texture in textures]
+
+        # Dict textures : state -> direction -> list[arcade.Texture]
+        self.textures_dict = {
+            "idle": {
+                Direction.RIGHT: right_facing_textures["idle"],
+                Direction.LEFT: left_facing_textures["idle"],
+                Direction.TOP: right_facing_textures["idle"],
+                Direction.BOTTOM: left_facing_textures["idle"],
+            },
+            "walk": {
+                Direction.RIGHT: right_facing_textures["walk"],
+                Direction.LEFT: left_facing_textures["walk"],
+                Direction.TOP: right_facing_textures["walk"],
+                Direction.BOTTOM: left_facing_textures["walk"],
+            },
+            "shoot": {
+                Direction.RIGHT: right_facing_textures["shoot"],
+                Direction.LEFT: left_facing_textures["shoot"],
+                Direction.TOP: right_facing_textures["shoot"],
+                Direction.BOTTOM: left_facing_textures["shoot"],
+            }
+        }
+
+        # État initial
+        self.state = "idle"
+        self.frame_index = 0
+        self.frame_time = 0.1
+        self.texture = self.textures_dict[self.state][self.direction][0]
+
+    def die(self):
+        super().die()
+        self.state = "idle"
+        self.frame_index = 0
+
+    def update_animation(self, delta_time: float = 1/60):
+        self.frame_time -= delta_time
+        if self.frame_time <= 0:
+            self.frame_time = 0.1
+            self.frame_index += 1
+            frames = self.textures_dict[self.state][self.direction]
+            self.frame_index %= len(frames)
+            self.texture = frames[self.frame_index]
 
 
 
     def update(self, delta_time = None):
+        if self.is_dead:
+            return
         self.target = self.nearest_target()
-        self.shoot_timer += 1
 
         if self.target is None:
+            self.state = "walk"
+            self.update_animation(delta_time)
             if self.direction == Direction.RIGHT:
                 self.center_x += 1
             elif self.direction == Direction.LEFT:
@@ -26,12 +96,19 @@ class Archer(Enemy):
             return
 
         if self.target is not None and self.distance(self.target) > 300:
+            self.state = "walk"
+            self.update_animation(delta_time)
             self.center_x += 1 if self.target.center_x > self.center_x else -1
-            if self.target.center_y > self.center_y:
+            if self.target.center_y < self.center_y:
                 self.center_y -= 1
             else:
                 self.center_y += 1
             return
+
+        if self.target is not None and self.distance(self.target) <= 300:
+            self.state = "shoot"
+            self.update_animation(delta_time)
+            self.shoot_timer += 1
 
         if self.target is not None and self.shoot_timer >= self.shoot_delay:
             self.shoot_arrow()
