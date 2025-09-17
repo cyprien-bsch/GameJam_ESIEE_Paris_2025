@@ -6,6 +6,7 @@ from entities.enemy import Enemy, Direction
 from entities.knight import Knight
 from utils.dialogue import Dialogue
 from entities.archer import Archer
+from entities.peon import Peon
 from entities.projectiles import Projectile
 from enum import Enum
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT
@@ -247,10 +248,16 @@ class GameWindow(arcade.Window):
         
         self.cycle_phase()
         if self.phase == GamePhase.WAR_START:
+            if random.random() < 0.05:
+                self.enemies[0].append(Peon(1500, 100 + 5000 * random.random(), Direction.LEFT, self.enemies[1], image="assets/images/Warrior_Red.png"))
+            if random.random() < 0.05:
+                self.enemies[1].append(Peon(300, 100 + 5000 * random.random(), Direction.RIGHT, self.enemies[0], image="assets/images/Warrior_Yellow.png"))
+
             if random.random() < 0.2:
                 self.enemies[0].append(Archer(1500, 100 + 5000 * random.random(), Direction.LEFT, self.projectiles[0], self.enemies[1], image="assets/images/Archer_Red.png"))
             if random.random() < 0.2:
                 self.enemies[1].append(Archer(300, 100 + 5000 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0], image="assets/images/Archer_Yellow.png"))
+
 
 
         self.player.update(dt)
