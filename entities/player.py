@@ -1,4 +1,5 @@
 import arcade
+from arcade.types import Color
 from utils.animation import AnimationUtil
 from entities.direction import Direction
 
@@ -72,6 +73,13 @@ class Player(arcade.Sprite):
         self.current_health = self.max_health
         self.invincible_timer = 0
         self.heart_texture = arcade.load_texture("assets/images/Heart.png")
+        
+        # Hit feedback system
+        self.hit_flash_timer = 0.0
+        self.hit_flash_duration = 0.15  # Flash red for 0.15 seconds
+        self.original_color = (255, 255, 255)  # Store original color
+        self.blink_timer = 0.0
+        self.blink_interval = 0.1  # Blink every 0.1 seconds during invincibility
 
     def update_animation(self, delta_time: float = 1 / 60):
         self.frame_time -= delta_time
@@ -88,6 +96,24 @@ class Player(arcade.Sprite):
         move_x = self.change_x * dt
 
         already_collided = arcade.check_for_collision_with_list(self, self.solid_decorations)
+        
+        # Update hit feedback effects
+        if self.hit_flash_timer > 0:
+            self.hit_flash_timer = max(0.0, self.hit_flash_timer - dt)
+            if self.hit_flash_timer <= 0:
+                # Reset to original color when flash ends
+                self.color = self.original_color
+        
+        # Update blinking effect during invincibility (after flash ends)
+        if self.invincible_timer > 0 and self.hit_flash_timer <= 0:
+            self.blink_timer += dt
+            if self.blink_timer >= self.blink_interval:
+                self.blink_timer = 0.0
+                # Toggle alpha between 100 and 255 for blinking effect
+                self.alpha = 100 if self.alpha == 255 else 255
+        elif self.invincible_timer <= 0:
+            # Ensure full opacity when not invincible
+            self.alpha = 255
 
         # Handle brooming logic
         if self.is_brooming and self.brooming_enemy:
@@ -156,6 +182,19 @@ class Player(arcade.Sprite):
             self.alpha = 255
 
     def draw(self):
+        # Apply color tinting manually since we're using a custom draw method
+        current_alpha = self.alpha if hasattr(self, 'alpha') else 255
+        current_color = getattr(self, 'color', (255, 255, 255, 255))
+        
+        # Ensure color is in RGBA format
+        if len(current_color) == 3:
+            current_color = (*current_color, current_alpha)
+        elif len(current_color) == 4:
+            current_color = (*current_color[:3], current_alpha)
+        
+        # Convert to arcade.Color object which has the .normalized attribute
+        color_obj = Color(*current_color)
+        
         arcade.draw_texture_rect(
             self.texture,
             rect=arcade.LBWH(
@@ -165,7 +204,7 @@ class Player(arcade.Sprite):
                 self.height
             ),
             angle=self.angle,
-            alpha=255
+            color=color_obj
         )
 
         spacing = 10   # espace entre les coeurs
@@ -189,7 +228,12 @@ class Player(arcade.Sprite):
     def take_damage(self, amount=1):
         if self.invincible_timer <= 0:  # applique les dégâts seulement si pas invincible
             self.current_health = max(0, self.current_health - amount)
-            self.invincible_timer = 1.0  # 1 seconde d’invincibilité
+            self.invincible_timer = 1.0  # 1 seconde d'invincibilité
+            
+            # Trigger hit feedback effects
+            self.hit_flash_timer = self.hit_flash_duration
+            self.color = (255, 100, 100)  # Flash red
+            self.blink_timer = 0.0  # Reset blink timer
 
     def heal(self, amount=1):
         self.current_health = min(self.max_health, self.current_health + amount)
