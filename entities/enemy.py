@@ -36,11 +36,12 @@ class Enemy(arcade.Sprite):
         current_distance, minimal_distance = 0, self.target_distance_limit
         nearest_target = None
 
+
         for target in self.targets:
             current_distance = self.distance(target)
             if (current_distance < minimal_distance):
                 nearest_target = target
-                current_distance = minimal_distance
+                minimal_distance = current_distance
         
         if nearest_target is not None:
             return self.center_x - nearest_target.center_x, self.center_y - nearest_target.center_y
