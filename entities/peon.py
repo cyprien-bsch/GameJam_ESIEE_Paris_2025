@@ -1,4 +1,5 @@
-from entities.enemy import Enemy, Direction
+from entities.enemy import Enemy
+from entities.direction import Direction
 from entities.projectiles import Projectile
 import math
 import arcade
@@ -8,7 +9,7 @@ from utils.animation import AnimationUtil
 
 class Peon(Enemy):
     def __init__(self, x: float, y: float, direction: Direction = Direction.LEFT, targets: arcade.SpriteList = None, image: str = "assets/images/Warrior_Red.png"):
-        super().__init__(x, y, direction, 1.0, targets)
+        super().__init__(x, y, direction, None, targets)
         self.target_distance_limit = 500
         self.attack_timer = 0
         self.attack_delay = random.uniform(80, 100) 
@@ -40,32 +41,32 @@ class Peon(Enemy):
             "idle": {
                 Direction.RIGHT: right_facing_textures["idle"],
                 Direction.LEFT: left_facing_textures["idle"],
-                Direction.TOP: right_facing_textures["idle"],
-                Direction.BOTTOM: left_facing_textures["idle"],
+                Direction.UP: right_facing_textures["idle"],
+                Direction.DOWN: left_facing_textures["idle"],
             },
             "walk": {
                 Direction.RIGHT: right_facing_textures["walk"],
                 Direction.LEFT: left_facing_textures["walk"],
-                Direction.TOP: right_facing_textures["walk"],
-                Direction.BOTTOM: left_facing_textures["walk"],
+                Direction.UP: right_facing_textures["walk"],
+                Direction.DOWN: left_facing_textures["walk"],
             },
             "attack": {
                 Direction.RIGHT: right_facing_textures["attack"],
                 Direction.LEFT: left_facing_textures["attack"],
-                Direction.TOP: right_facing_textures["attack"],
-                Direction.BOTTOM: left_facing_textures["attack"],
+                Direction.UP: right_facing_textures["attack"],
+                Direction.DOWN: left_facing_textures["attack"],
             },
             "attack_up": {
                 Direction.RIGHT: right_facing_textures["attack_up"],
                 Direction.LEFT: left_facing_textures["attack_up"],
-                Direction.TOP: right_facing_textures["attack_up"],
-                Direction.BOTTOM: left_facing_textures["attack_up"],
+                Direction.UP: right_facing_textures["attack_up"],
+                Direction.DOWN: left_facing_textures["attack_up"],
             },
             "attack_down": {
                 Direction.RIGHT: right_facing_textures["attack_down"],
                 Direction.LEFT: left_facing_textures["attack_down"],
-                Direction.TOP: right_facing_textures["attack_down"],
-                Direction.BOTTOM: left_facing_textures["attack_down"],
+                Direction.UP: right_facing_textures["attack_down"],
+                Direction.DOWN: left_facing_textures["attack_down"],
             }
         }
 

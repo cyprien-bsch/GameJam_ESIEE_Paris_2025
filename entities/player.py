@@ -1,12 +1,6 @@
 import arcade
 from utils.animation import AnimationUtil
-from enum import Enum
-
-class Direction(Enum):
-    LEFT = "left"
-    RIGHT = "right"
-    UP = "up"
-    DOWN = "down"
+from entities.direction import Direction
 
 class Player(arcade.Sprite):
     def __init__(self, x: float, y: float, solid_decorations: arcade.SpriteList, enemy_lists: list[arcade.SpriteList]):

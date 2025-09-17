@@ -2,7 +2,7 @@ import arcade
 from arcade.gui import UIManager, UITextureButton
 import xml.etree.ElementTree as ET
 from entities.player import Player
-from entities.enemy import Enemy, Direction
+from entities.direction import Direction
 from entities.knight import Knight
 from utils.dialogue import Dialogue
 from entities.archer import Archer
