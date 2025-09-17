@@ -1,6 +1,8 @@
 import arcade
 from entities.player import Player
 from entities.enemy import Enemy, Direction
+from entities.knight import Knight
+from utils.dialogue import Dialogue
 from enum import Enum
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT
 import random
@@ -28,6 +30,7 @@ class GameWindow(arcade.Window):
     def __init__(self, width, height, title):
         super().__init__(width, height, title)
         self.player = arcade.SpriteList()
+        self.knight = arcade.SpriteList()
         #left and right enemies for direction
         self.enemies = [arcade.SpriteList(), arcade.SpriteList()]
         #left and right projectiles 
@@ -39,6 +42,7 @@ class GameWindow(arcade.Window):
         self.phase_timer = 0
         self.camera = arcade.camera.Camera2D()  # caméra pour la scène
         self.gui_camera = arcade.camera.Camera2D()  # caméra fixe pour HUD
+        self.dialogue_manager = Dialogue()
 
     def center_camera_to_sprite(self, sprite: arcade.Sprite):
         target_pos = (sprite.center_x, sprite.center_y)
@@ -63,11 +67,18 @@ class GameWindow(arcade.Window):
             print("Phase changed to:", self.phase)
 
     def setup(self):
-        self.player.append(Player(100, 100, self.solid_decorations))
+        player_sprite = Player(100, 100, self.solid_decorations)
+        player_sprite.scale = 1.5
+        self.player.append(player_sprite)
+
+        knight_sprite = Knight(200, 200)
+        knight_sprite.scale = 2
+        self.knight.append(knight_sprite)
+        
         self.enemies[0].append(Enemy(400, 300, Direction.LEFT, self.projectiles[0]))
         self.enemies[1].append(Enemy(600, 300, Direction.RIGHT, self.projectiles[1]))
         self.background = arcade.load_texture("assets/images/background.png")
-        for i in range(25):
+        for i in range(10):
             self.solid_decorations.append(arcade.Sprite(":resources:/images/tiles/rock.png", 0.5, center_x=random.random()*SCREEN_WIDTH, center_y=random.random()*SCREEN_HEIGHT))
 
     def on_draw(self):
@@ -79,6 +90,7 @@ class GameWindow(arcade.Window):
                 angle=0, alpha=255
             )
             self.player.draw()
+            self.knight.draw()
             for enemy_list in self.enemies:
                 enemy_list.draw()
             for projectile_list in self.projectiles:
@@ -88,7 +100,15 @@ class GameWindow(arcade.Window):
 
         with self.gui_camera.activate():
             arcade.draw_text(f"Phase: {self.phase.name}", 10, self.height - 20, arcade.color.WHITE, 14)
+            # affiche le dialogue
+            self.dialogue_manager.draw(self.width, self.height)
 
+        
+
+
+    def is_in_collidable_objects(self, sprite: arcade.Sprite) -> bool:
+        return arcade.check_for_collision_with_list(sprite, self.solid_decorations) or \
+               arcade.check_for_collision_with_list(sprite, self.knight)
 
     # Check collisions and do actions for each
     def check_collision(self):
@@ -106,6 +126,10 @@ class GameWindow(arcade.Window):
         for right_enemy in self.enemies[1]:
             if arcade.check_for_collision_with_list(right_enemy, self.projectiles[0]):
                 right_enemy.remove_from_sprite_lists()
+
+        # Quand collision avec le knight
+        if arcade.check_for_collision_with_list(self.player[0], self.knight):
+            self.dialogue_manager.start("knight_intro")
 
     # Update all game objects each frame (delta time is time since last update)
     def on_update(self, delta_time):
@@ -125,13 +149,16 @@ class GameWindow(arcade.Window):
 
 
         self.player.update(delta_time)
+        self.knight.update(delta_time)
+        self.dialogue_manager.update(delta_time)
         for enemy_list in self.enemies:
             enemy_list.update(delta_time)
         for projectile_list in self.projectiles:
             projectile_list.update(delta_time)
         self.check_collision()
 
-        self.center_camera_to_sprite(self.enemies[0][0] if len(self.enemies[0]) > 0 else self.enemies[1][0] if len(self.enemies[1]) > 0 else self.player[0])
+        self.center_camera_to_sprite(self.knight[0] if len(self.knight) > 0 else self.player[0])
+        #self.center_camera_to_sprite(self.enemies[0][0] if len(self.enemies[0]) > 0 else self.enemies[1][0] if len(self.enemies[1]) > 0 else self.player[0])
 
 
     def on_key_press(self, symbol, modifiers):
@@ -140,6 +167,10 @@ class GameWindow(arcade.Window):
         if symbol in [arcade.key.UP, arcade.key.DOWN, arcade.key.LEFT, arcade.key.RIGHT]:
             self.player[0].on_key_press(symbol, modifiers)
             self.player.update()
+        
+        if symbol == arcade.key.ENTER:
+            self.dialogue_manager.advance()
+
     
     def on_key_release(self, symbol, modifiers):
         if symbol in [arcade.key.UP, arcade.key.DOWN, arcade.key.LEFT, arcade.key.RIGHT]:
