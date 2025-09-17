@@ -65,12 +65,18 @@ class GameWindow(arcade.Window):
             print("Phase changed to:", self.phase)
 
     def setup(self):
-        self.player.append(Player(100, 100, self.solid_decorations))
-        self.knight.append(Knight(200, 200, Direction.RIGHT, self.projectiles[1]))
+        player_sprite = Player(100, 100, self.solid_decorations)
+        player_sprite.scale = 1.5
+        self.player.append(player_sprite)
+
+        knight_sprite = Knight(200, 200)
+        knight_sprite.scale = 2
+        self.knight.append(knight_sprite)
+        
         self.enemies[0].append(Enemy(400, 300, Direction.LEFT, self.projectiles[0]))
         self.enemies[1].append(Enemy(600, 300, Direction.RIGHT, self.projectiles[1]))
         self.background = arcade.load_texture("assets/images/background.png")
-        for i in range(25):
+        for i in range(10):
             self.solid_decorations.append(arcade.Sprite(":resources:/images/tiles/rock.png", 0.5, center_x=random.random()*SCREEN_WIDTH, center_y=random.random()*SCREEN_HEIGHT))
 
     def on_draw(self):
@@ -93,6 +99,9 @@ class GameWindow(arcade.Window):
         with self.gui_camera.activate():
             arcade.draw_text(f"Phase: {self.phase.name}", 10, self.height - 20, arcade.color.WHITE, 14)
 
+    def is_in_collidable_objects(self, sprite: arcade.Sprite) -> bool:
+        return arcade.check_for_collision_with_list(sprite, self.solid_decorations) or \
+               arcade.check_for_collision_with_list(sprite, self.knight)
 
     # Check collisions and do actions for each
     def check_collision(self):
