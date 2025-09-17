@@ -137,15 +137,15 @@ class GameWindow(arcade.Window):
         self.cycle_phase()
         
         if self.phase == GamePhase.WAR_START:
-            if random.random() < 0.1:
-                self.enemies[0].append(Peon(800, 100 + 400 * random.random(), Direction.LEFT, self.enemies[1]))
-            if random.random() < 0.1:
-                self.enemies[1].append(Peon(0, 100 + 400 * random.random(), Direction.RIGHT, self.enemies[0]))
-            if random.random() < 0.02:
+            if random.random() < 0.05:
+                self.enemies[0].append(Peon(800, 100 + 400 * random.random(), Direction.LEFT, self.enemies[1], image="assets/images/Warrior_Red.png"))
+            if random.random() < 0.05:
+                self.enemies[1].append(Peon(0, 100 + 400 * random.random(), Direction.RIGHT, self.enemies[0], image="assets/images/Warrior_Yellow.png"))
+            """if random.random() < 0.01:
                 self.enemies[0].append(Archer(800, 100 + 400 * random.random(), Direction.LEFT, self.projectiles[0], self.enemies[1], image="assets/images/Archer_Red.png"))
-            if random.random() < 0.02:
+            if random.random() < 0.01:
                 self.enemies[1].append(Archer(0, 100 + 400 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0], image="assets/images/Archer_Yellow.png"))
-
+"""
         if self.phase == GamePhase.WAR_END:
             self.enemies[0].clear()
             self.enemies[1].clear()
