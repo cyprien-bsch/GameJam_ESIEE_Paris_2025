@@ -220,10 +220,8 @@ class GameWindow(arcade.Window):
             # Check player collision with enemies
             if (arcade.check_for_collision_with_list(player, self.filter_out_dead_enemies(self.enemies[0])) or
                 arcade.check_for_collision_with_list(player, self.filter_out_dead_enemies(self.enemies[1]))):
-                player.color = arcade.color.RED
                 if player.invincible_timer <= 0:   # éviter de perdre tous les cœurs d'un coup
                     player.take_damage(1)          # <-- il perd 1 cœur
-                    player.invincible_timer = 1.0
             
             # Check player collision with projectiles from both teams and remove them
             all_projectiles = arcade.SpriteList()
@@ -232,10 +230,8 @@ class GameWindow(arcade.Window):
             
             hit_projectiles = arcade.check_for_collision_with_list(player, all_projectiles)
             if hit_projectiles:
-                player.color = arcade.color.RED
                 if player.invincible_timer <= 0:
                     player.take_damage(1)
-                    player.invincible_timer = 1.0
                 for projectile in hit_projectiles:
                     projectile.remove_from_sprite_lists()
         
