@@ -77,8 +77,6 @@ class GameWindow(arcade.Window):
         knight_sprite.scale = 2
         self.knight.append(knight_sprite)
         
-        self.enemies[0].append(Enemy(400, 300, Direction.LEFT, self.projectiles[0]))
-        self.enemies[1].append(Enemy(600, 300, Direction.RIGHT, self.projectiles[1]))
         self.background = arcade.load_texture("assets/images/background.png")
         for i in range(10):
             self.solid_decorations.append(arcade.Sprite(":resources:/images/tiles/rock.png", 0.5, center_x=random.random()*SCREEN_WIDTH, center_y=random.random()*SCREEN_HEIGHT))
