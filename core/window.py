@@ -4,6 +4,7 @@ from entities.enemy import Enemy, Direction
 from entities.knight import Knight
 from utils.dialogue import Dialogue
 from entities.archer import Archer
+from entities.peon import Peon
 from entities.projectiles import Projectile
 from enum import Enum
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT
@@ -19,7 +20,7 @@ class GamePhase(Enum):
 
 def phase_length(phase: GamePhase) -> int:
     if phase == GamePhase.REST:
-        return 10
+        return 1
     if phase == GamePhase.WAR_START:
         return 5
     if phase == GamePhase.IN_WAR:
@@ -139,9 +140,11 @@ class GameWindow(arcade.Window):
         
         if self.phase == GamePhase.WAR_START:
             if random.random() < 0.1:
-                self.enemies[0].append(Archer(800, 100 + 400 * random.random(), Direction.LEFT, self.projectiles[0], self.enemies[1]))
+                self.enemies[0].append(Peon(800, 100 + 400 * random.random(), Direction.LEFT, self.enemies[1]))
+                # self.enemies[0].append(Archer(800, 100 + 400 * random.random(), Direction.LEFT, self.projectiles[0], self.enemies[1]))
             if random.random() < 0.1:
-                self.enemies[1].append(Archer(0, 100 + 400 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0]))
+                self.enemies[1].append(Peon(0, 100 + 400 * random.random(), Direction.RIGHT, self.enemies[0]))
+                # self.enemies[1].append(Archer(0, 100 + 400 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0]))
 
         if self.phase == GamePhase.WAR_END:
             self.enemies[0].clear()

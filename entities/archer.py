@@ -25,9 +25,9 @@ class Archer(Enemy):
                 self.center_x -= 1
             return
 
-        if self.target is not None and math.sqrt(self.target[0]**2 + self.target[1]**2) > 300:
-            self.center_x += 1 if self.target[0] < 0 else -1
-            if self.target[1] > 0:
+        if self.target is not None and self.distance(self.target) > 300:
+            self.center_x += 1 if self.target.center_x > self.center_x else -1
+            if self.target.center_y > self.center_y:
                 self.center_y -= 1
             else:
                 self.center_y += 1
@@ -41,7 +41,7 @@ class Archer(Enemy):
     def shoot_arrow(self):
         if self.target is not None:
             # Calculate vector to target
-            target_x, target_y = self.target
+            target_x, target_y = self.center_x - self.target.center_x, self.center_y - self.target.center_y
 
             # Calculate the distance to the target
             distance = math.sqrt(target_x**2 + target_y**2)

@@ -36,16 +36,13 @@ class Enemy(arcade.Sprite):
         current_distance, minimal_distance = 0, self.target_distance_limit
         nearest_target = None
 
-
         for target in self.targets:
             current_distance = self.distance(target)
             if (current_distance < minimal_distance):
                 nearest_target = target
                 minimal_distance = current_distance
         
-        if nearest_target is not None:
-            return self.center_x - nearest_target.center_x, self.center_y - nearest_target.center_y
-        return None
+        return nearest_target
 
 
     def update_direction(self):
@@ -81,8 +78,8 @@ class Enemy(arcade.Sprite):
             self.center_y -= 1
         
         elif self.direction == Direction.TARGET:
-            self.center_x += self.target[0]
-            self.center_y += self.target[1]
+            self.center_x += self.target.center_x
+            self.center_y += self.target.center_y
             
         if self.center_x < 0:
             self.center_x = settings.SCREEN_WIDTH
