@@ -47,12 +47,15 @@ class GameWindow(arcade.Window):
         self.physics_engine = None
         self.dialogue_manager = Dialogue()
         self.paused = False 
+        self.out_of_view_timer = 0.0
+        self.max_out_of_view_time = 15.0
 
         # Gestionnaire UI
         self.ui_manager = UIManager()
         self.ui_manager.enable()
         self.play_button = None
         self.setup_menu()
+        arcade.load_font("assets/fonts/CloisterBlack.ttf")
 
     def center_camera_to_sprite(self, sprite: arcade.Sprite):
         self.camera.position = (sprite.center_x, sprite.center_y)
@@ -134,6 +137,9 @@ class GameWindow(arcade.Window):
         except Exception as e:
             print(f"Warning: failed to create physics engine: {e}")
 
+        arcade.load_font("assets/fonts/CloisterBlack.ttf")
+
+
 
     def on_draw(self):
         self.clear()
@@ -190,7 +196,7 @@ class GameWindow(arcade.Window):
             angle=0
         )
 
-            # HUD coeurs
+            
             if len(self.knight) > 0:
                 for i in range(self.knight[0].current_health):
                     arcade.draw_texture_rect(
@@ -206,7 +212,17 @@ class GameWindow(arcade.Window):
                     self.width // 2, self.height // 2,
                     arcade.color.RED,
                     40,
+                    font_name="Cloister Black",
                     anchor_x="center", anchor_y="center"
+                )
+            if self.out_of_view_timer > 0:
+                arcade.draw_text(
+                    "Trop loin du maître... -1 cœur / 5s",
+                    self.width // 2, self.height - 200,
+                    (255, 215, 0, 255),  
+                    18,
+                    font_name="Cloister Black",
+                    anchor_x="center"
                 )
 
 
@@ -263,6 +279,28 @@ class GameWindow(arcade.Window):
         self.check_collision()
         self.center_camera_to_sprite(self.knight[0] if len(self.knight) > 0 else self.player[0])
 
+        view_left = self.camera.position[0] - self.width // 2
+        view_right = self.camera.position[0] + self.width // 2
+        view_bottom = self.camera.position[1] - self.height // 2
+        view_top = self.camera.position[1] + self.height // 2
+
+        if len(self.player) > 0 and len(self.knight) > 0:
+            player = self.player[0]
+            knight = self.knight[0]
+
+        if (player.center_x < view_left or player.center_x > view_right or
+            player.center_y < view_bottom or player.center_y > view_top):
+            self.out_of_view_timer += delta_time
+        else:
+            self.out_of_view_timer = 0  # reset quand il revient dans le champ
+
+        if 5 < self.out_of_view_timer <= 10:
+            player.take_damage(1)
+        elif self.out_of_view_timer >= self.max_out_of_view_time:
+            # Respawn auto à côté du chevalier
+            player.center_x = knight.center_x + 30
+            player.center_y = knight.center_y
+            self.out_of_view_timer = 0
 
     def start_game(self, event=None):
         self.phase = GamePhase.REST
