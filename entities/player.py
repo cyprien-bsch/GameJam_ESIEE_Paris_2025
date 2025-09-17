@@ -27,6 +27,7 @@ class Player(arcade.Sprite):
         self.BROOM_TIME_TO_REMOVE = 3.0
 
         self.init_anim_frames()
+        arcade.play_sound(self.hit_sound)
 
     def init_anim_frames(self):
         # Taille d'une frame
@@ -196,6 +197,8 @@ class Player(arcade.Sprite):
         if self.invincible_timer <= 0:  # applique les dégâts seulement si pas invincible
             self.current_health = max(0, self.current_health - amount)
             self.invincible_timer = 1.0  # 1 seconde d’invincibilité
+
+        arcade.play_sound(self.hit_sound)
 
     def heal(self, amount=1):
         self.current_health = min(self.max_health, self.current_health + amount)
