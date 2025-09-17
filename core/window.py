@@ -41,6 +41,7 @@ class GameWindow(arcade.Window):
         self.phase_timer = 0
         self.camera = arcade.camera.Camera2D()  # caméra pour la scène
         self.gui_camera = arcade.camera.Camera2D()  # caméra fixe pour HUD
+        self.heart_texture = arcade.load_texture("assets/images/Heart.png")
 
     def center_camera_to_sprite(self, sprite: arcade.Sprite):
         target_pos = (sprite.center_x, sprite.center_y)
@@ -96,8 +97,31 @@ class GameWindow(arcade.Window):
             
             self.solid_decorations.draw()
 
+
+
         with self.gui_camera.activate():
+            # HUD texte
             arcade.draw_text(f"Phase: {self.phase.name}", 10, self.height - 20, arcade.color.WHITE, 14)
+
+            # HUD coeurs
+            if len(self.player) > 0:
+                for i in range(self.player[0].current_health):
+                    arcade.draw_texture_rect(
+                        self.heart_texture,
+                        rect=arcade.LBWH(30 + i * 20, self.height - 62, 40, 40),
+                        angle=0,
+                        alpha=255
+                    )
+            
+            if self.player[0].current_health <= 0:
+                arcade.draw_text(
+                    "GAME OVER",
+                    self.width // 2, self.height // 2,
+                    arcade.color.RED,
+                    40,
+                    anchor_x="center", anchor_y="center"
+                )
+
 
     def is_in_collidable_objects(self, sprite: arcade.Sprite) -> bool:
         return arcade.check_for_collision_with_list(sprite, self.solid_decorations) or \
@@ -105,11 +129,17 @@ class GameWindow(arcade.Window):
 
     # Check collisions and do actions for each
     def check_collision(self):
+        player = self.player[0]
         if (arcade.check_for_collision_with_list(self.player[0], self.enemies[0])
         or arcade.check_for_collision_with_list(self.player[0], self.enemies[1])
         or arcade.check_for_collision_with_list(self.player[0], self.projectiles[0])
         or arcade.check_for_collision_with_list(self.player[0], self.projectiles[1])):
             self.player[0].color = arcade.color.RED
+        
+            if player.invincible_timer <= 0:   # éviter de perdre tous les cœurs d'un coup
+                player.take_damage(1)          # <-- il perd 1 cœur
+                player.invincible_timer = 1.0
+                player.color = arcade.color.RED
         else: 
             self.player[0].color = arcade.color.WHITE
         

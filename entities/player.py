@@ -10,6 +10,7 @@ class Player(arcade.Sprite):
         self.change_y = 0
         self.speed = 200
         self.solid_decorations = solid_decorations if solid_decorations is not None else arcade.SpriteList()
+    
 
         # Taille d'une frame
         self.frame_width = 40
@@ -40,6 +41,12 @@ class Player(arcade.Sprite):
         self.frame_time = 0.1
         self.texture = self.textures_dict[self.state][self.direction][0]
 
+        # --- Vie du joueur ---
+        self.max_health = 5
+        self.current_health = self.max_health
+
+        self.invincible_timer = 0
+
     def update_animation(self, delta_time: float = 1/60):
         self.frame_time -= delta_time
         if self.frame_time <= 0:
@@ -49,7 +56,7 @@ class Player(arcade.Sprite):
             self.frame_index %= len(frames)
             self.texture = frames[self.frame_index]
 
-    def update(self, delta_time = None):
+    def update(self, delta_time=None):
         move_x = self.change_x * (delta_time if delta_time else 1/60)
 
         already_collided = arcade.check_for_collision_with_list(self, self.solid_decorations)
@@ -79,6 +86,16 @@ class Player(arcade.Sprite):
 
         # Mise à jour animation
         self.update_animation(delta_time)
+
+        if self.invincible_timer > 0:
+            self.invincible_timer -= delta_time
+
+    # --- Gestion de la vie ---
+    def take_damage(self, amount=1):
+        self.current_health = max(0, self.current_health - amount)
+
+    def heal(self, amount=1):
+        self.current_health = min(self.max_health, self.current_health + amount)
 
     def on_key_press(self, symbol, modifiers):
         if symbol == arcade.key.UP:
@@ -123,3 +140,4 @@ class Player(arcade.Sprite):
                 self.change_x = 0
             else:
                 self.change_x = -self.speed
+
