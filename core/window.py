@@ -2,6 +2,8 @@ import arcade
 import xml.etree.ElementTree as ET
 from entities.player import Player
 from entities.enemy import Enemy, Direction
+from entities.knight import Knight
+from utils.dialogue import Dialogue
 from enum import Enum
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT
 import random
@@ -29,6 +31,7 @@ class GameWindow(arcade.Window):
     def __init__(self, width, height, title):
         super().__init__(width, height, title)
         self.player = arcade.SpriteList()
+        self.knight = arcade.SpriteList()
         #left and right enemies for direction
         self.enemies = [arcade.SpriteList(), arcade.SpriteList()]
         #left and right projectiles 
@@ -42,6 +45,7 @@ class GameWindow(arcade.Window):
         self.camera = arcade.camera.Camera2D()  # caméra pour la scène
         self.gui_camera = arcade.camera.Camera2D()  # caméra fixe pour HUD
         self.physics_engine = None
+        self.dialogue_manager = Dialogue()
 
     def center_camera_to_sprite(self, sprite: arcade.Sprite):
         target_pos = (sprite.center_x, sprite.center_y)
@@ -115,7 +119,14 @@ class GameWindow(arcade.Window):
             print(f"Warning: failed to parse collisions from TMX: {e}")
 
         # 3) Create player and physics using the collision sprites
-        self.player.append(Player(100, 100, self.solid_decorations))
+        player_sprite = Player(100, 100, self.solid_decorations)
+        player_sprite.scale = 2
+        self.player.append(player_sprite)
+
+        knight_sprite = Knight(300, 300)
+        knight_sprite.scale = 2
+        self.knight.append(knight_sprite)
+        
         try:
             if len(self.player) > 0 and isinstance(self.solid_decorations, arcade.SpriteList):
                 self.physics_engine = arcade.PhysicsEngineSimple(self.player[0], self.solid_decorations)
@@ -132,6 +143,7 @@ class GameWindow(arcade.Window):
             if self.scene is not None:
                 self.scene.draw()
             self.player.draw()
+            self.knight.draw()
             for enemy_list in self.enemies:
                 enemy_list.draw()
             for projectile_list in self.projectiles:
@@ -141,7 +153,15 @@ class GameWindow(arcade.Window):
 
         with self.gui_camera.activate():
             arcade.draw_text(f"Phase: {self.phase.name}", 10, self.height - 20, arcade.color.WHITE, 14)
+            # affiche le dialogue
+            self.dialogue_manager.draw(self.width, self.height)
 
+        
+
+
+    def is_in_collidable_objects(self, sprite: arcade.Sprite) -> bool:
+        return arcade.check_for_collision_with_list(sprite, self.solid_decorations) or \
+               arcade.check_for_collision_with_list(sprite, self.knight)
 
     # Check collisions and do actions for each
     def check_collision(self):
@@ -160,8 +180,14 @@ class GameWindow(arcade.Window):
             if arcade.check_for_collision_with_list(right_enemy, self.projectiles[0]):
                 right_enemy.remove_from_sprite_lists()
 
+        # Quand collision avec le knight
+        if arcade.check_for_collision_with_list(self.player[0], self.knight):
+            self.dialogue_manager.start("knight_intro")
+
     # Update all game objects each frame (delta time is time since last update)
     def on_update(self, delta_time):
+        # Clamp anomolously large frame times (can happen on first frame/load)
+        dt = min(max(delta_time, 0.0), 1/30)
         self.cycle_phase()
         
         if self.phase == GamePhase.WAR_START:
@@ -177,24 +203,33 @@ class GameWindow(arcade.Window):
             self.projectiles[1].clear()
 
 
-        self.player.update(delta_time)
+        self.player.update(dt)
+        self.knight.update(dt)
+        self.dialogue_manager.update(dt)
         for enemy_list in self.enemies:
-            enemy_list.update(delta_time)
+            enemy_list.update(dt)
         for projectile_list in self.projectiles:
-            projectile_list.update(delta_time)
+            projectile_list.update(dt)
         self.check_collision()
 
         # Center camera on the player
         if len(self.player) > 0:
-            self.center_camera_to_sprite(self.player[0])
+            self.center_camera_to_sprite(self.knight[0] if len(self.knight) > 0 else self.player[0])
+
+        #self.center_camera_to_sprite(self.player[0])
 
 
     def on_key_press(self, symbol, modifiers):
         if symbol == arcade.key.ESCAPE:
             arcade.close_window()
-        if symbol in [arcade.key.UP, arcade.key.DOWN, arcade.key.LEFT, arcade.key.RIGHT]:
+        if symbol in [arcade.key.UP, arcade.key.DOWN, arcade.key.LEFT, arcade.key.RIGHT, arcade.key.SPACE, arcade.key.Z, arcade.key.Q, arcade.key.S, arcade.key.D]:
             self.player[0].on_key_press(symbol, modifiers)
+            self.player.update()
+        
+        if symbol == arcade.key.ENTER:
+            self.dialogue_manager.advance()
+
     
     def on_key_release(self, symbol, modifiers):
-        if symbol in [arcade.key.UP, arcade.key.DOWN, arcade.key.LEFT, arcade.key.RIGHT]:
+        if symbol in [arcade.key.UP, arcade.key.DOWN, arcade.key.LEFT, arcade.key.RIGHT, arcade.key.SPACE, arcade.key.Z, arcade.key.Q, arcade.key.S, arcade.key.D]:
             self.player[0].on_key_release(symbol, modifiers)
