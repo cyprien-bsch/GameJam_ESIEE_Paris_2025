@@ -1,13 +1,15 @@
 import arcade
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT
+import math
 
 class Projectile(arcade.Sprite):
     def __init__(self, x, y, dx, dy):
-        super().__init__(":resources:images/space_shooter/laserBlue01.png", 0.5)
+        super().__init__("assets/images/Arrow_right.png", 0.5)
         self.center_x = x
         self.center_y = y
         self.change_x = dx
         self.change_y = dy
+        self.angle = math.degrees(math.atan2(-self.change_y, self.change_x))
 
     def update(self, delta_time=None):
         self.center_x += self.change_x
