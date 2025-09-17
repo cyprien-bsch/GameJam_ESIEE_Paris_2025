@@ -138,20 +138,15 @@ class GameWindow(arcade.Window):
 
 
     def on_draw(self):
-        self.clear()
+       
+
         if self.phase == GamePhase.MENU:
-            arcade.draw_text(
-                "BROOM & DOOM",
-                self.width / 2,
-                self.height / 2 + 50,
-                arcade.color.WHITE,
-                36,
-                anchor_x="center",
-                anchor_y="center"
-            )
+            # Dessiner le SpriteList contenant l'image de fond
+            self.menu_background_list.draw()
+            # Dessiner le bouton Play
             self.ui_manager.draw()
             return
-
+        
         with self.camera.activate():
             if self.scene is not None:
                 self.scene.draw()
@@ -308,37 +303,26 @@ class GameWindow(arcade.Window):
             self.player.update()
 
     def setup_menu(self):
-        """Créer le menu avec titre et bouton Play centré sous le titre"""
-        # Vider le UIManager
         self.ui_manager.clear()
 
-        # Créer un layout vertical
-        layout = arcade.gui.UIBoxLayout()
+        # Créer un Sprite pour l'image de fond
+        self.menu_background_sprite = arcade.Sprite("assets/images/affiche.png")
+        self.menu_background_sprite.center_x = self.width // 2
+        self.menu_background_sprite.center_y = self.height // 2
+        self.menu_background_sprite.width = self.width
+        self.menu_background_sprite.height = self.height
 
-        # Titre
-        title = arcade.gui.UITextArea(
-            text="BROOM & DOOM",
-            width=400,
-            height=50,
-            font_size=36,
-            font_name="Arial",
-            text_color=arcade.color.WHITE,
-            align="center"
-        )
+        # Mettre le sprite dans une SpriteList
+        self.menu_background_list = arcade.SpriteList()
+        self.menu_background_list.append(self.menu_background_sprite)
 
         # Bouton Play
-        play_texture = arcade.load_texture("assets/images/play_button2.png")
-        play_button = arcade.gui.UITextureButton(
-            texture=play_texture,
-            width=64,
-            height=64
-        )
+        layout = arcade.gui.UIBoxLayout()
+        play_texture = arcade.load_texture("assets/images/button_play_yellow.png")
+        play_button = arcade.gui.UITextureButton(texture=play_texture, width=100, height=100)
         play_button.on_click = self.start_game
         layout.add(play_button)
-
-        # Centrer le layout sur l'écran
-        layout.center_x = self.width // 2-20
-        layout.center_y = 60
-
-        # Ajouter le layout au UIManager
+        layout.center_x = self.width // 2 - 45
+        layout.center_y = self.height // 2 - 100
         self.ui_manager.add(layout)
+
