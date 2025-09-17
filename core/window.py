@@ -3,6 +3,8 @@ from entities.player import Player
 from entities.enemy import Enemy, Direction
 from entities.knight import Knight
 from utils.dialogue import Dialogue
+from entities.archer import Archer
+from entities.projectiles import Projectile
 from enum import Enum
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT
 import random
@@ -137,10 +139,10 @@ class GameWindow(arcade.Window):
         
         if self.phase == GamePhase.WAR_START:
             if random.random() < 0.1:
-                self.enemies[0].append(Enemy(800, 100 + 400 * random.random(), Direction.LEFT, self.projectiles[0]))
+                self.enemies[0].append(Archer(800, 100 + 400 * random.random(), Direction.LEFT, self.projectiles[0], self.enemies[1]))
             if random.random() < 0.1:
-                self.enemies[1].append(Enemy(0, 100 + 400 * random.random(), Direction.RIGHT, self.projectiles[1]))
-        
+                self.enemies[1].append(Archer(0, 100 + 400 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0]))
+
         if self.phase == GamePhase.WAR_END:
             self.enemies[0].clear()
             self.enemies[1].clear()
