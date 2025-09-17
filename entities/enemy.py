@@ -44,7 +44,7 @@ class Enemy(arcade.Sprite):
 
         for target in self.targets:
             current_distance = self.distance(target)
-            if (current_distance < minimal_distance):
+            if (current_distance < minimal_distance) and (not target.is_dead):
                 nearest_target = target
                 minimal_distance = current_distance
         
