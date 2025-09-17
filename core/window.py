@@ -41,7 +41,7 @@ class GameWindow(arcade.Window):
         self.phase_timer = 0
         self.camera = arcade.camera.Camera2D()  # caméra pour la scène
         self.gui_camera = arcade.camera.Camera2D()  # caméra fixe pour HUD
-        self.heart_texture = arcade.load_texture("assets/images/Heart.png")
+        self.knight_heart_texture = arcade.load_texture("assets/images/Heart.png")
 
     def center_camera_to_sprite(self, sprite: arcade.Sprite):
         target_pos = (sprite.center_x, sprite.center_y)
@@ -88,7 +88,8 @@ class GameWindow(arcade.Window):
                 rect=arcade.LBWH(-self.width, -self.height, self.width * 2, self.height * 2),
                 angle=0, alpha=255
             )
-            self.player.draw()
+            for p in self.player:
+                p.draw()
             self.knight.draw()
             for enemy_list in self.enemies:
                 enemy_list.draw()
@@ -104,10 +105,10 @@ class GameWindow(arcade.Window):
             arcade.draw_text(f"Phase: {self.phase.name}", 10, self.height - 20, arcade.color.WHITE, 14)
 
             # HUD coeurs
-            if len(self.player) > 0:
-                for i in range(self.player[0].current_health):
+            if len(self.knight) > 0:
+                for i in range(self.knight[0].current_health):
                     arcade.draw_texture_rect(
-                        self.heart_texture,
+                        self.knight_heart_texture,
                         rect=arcade.LBWH(30 + i * 20, self.height - 62, 40, 40),
                         angle=0,
                         alpha=255
@@ -142,6 +143,7 @@ class GameWindow(arcade.Window):
                 player.color = arcade.color.RED
         else: 
             self.player[0].color = arcade.color.WHITE
+
         
         for left_enemy in self.enemies[0]:
             if arcade.check_for_collision_with_list(left_enemy, self.projectiles[1]):
