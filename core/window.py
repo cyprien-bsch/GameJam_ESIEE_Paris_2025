@@ -25,7 +25,7 @@ def phase_length(phase: GamePhase) -> int:
     if phase == GamePhase.WAR_START:
         return 5
     if phase == GamePhase.IN_WAR:
-        return 20
+        return 200
     if phase == GamePhase.WAR_END:
         return 3
     return 0
@@ -121,11 +121,11 @@ class GameWindow(arcade.Window):
             print(f"Warning: failed to parse collisions from TMX: {e}")
 
         # 3) Create player and physics using the collision sprites
-        player_sprite = Player(100, 100, self.solid_decorations, self.enemies)
+        player_sprite = Player(800, 800, self.solid_decorations, self.enemies)
         player_sprite.scale = 2
         self.player.append(player_sprite)
 
-        knight_sprite = Knight(300, 300)
+        knight_sprite = Knight(900, 800)
         knight_sprite.scale = 2
         self.knight.append(knight_sprite)
         
@@ -135,9 +135,6 @@ class GameWindow(arcade.Window):
         except Exception as e:
             print(f"Warning: failed to create physics engine: {e}")
 
-        # Example enemies for existing gameplay loop
-        self.enemies[0].append(Enemy(400, 300, Direction.LEFT, self.projectiles[0]))
-        self.enemies[1].append(Enemy(600, 300, Direction.RIGHT, self.projectiles[1]))
 
     def on_draw(self):
         self.clear()
@@ -166,7 +163,6 @@ class GameWindow(arcade.Window):
             self.solid_decorations.draw()
 
         with self.gui_camera.activate():
-            arcade.draw_text(f"Phase: {self.phase.name}", 10, self.height - 20, arcade.color.WHITE, 14)
             self.dialogue_manager.draw(self.width, self.height)
 
             if self.paused:
@@ -194,6 +190,7 @@ class GameWindow(arcade.Window):
                arcade.check_for_collision_with_list(sprite, self.knight)
 
     def check_collision(self):
+        """
         if (arcade.check_for_collision_with_list(self.player[0], self.enemies[0]) or
             arcade.check_for_collision_with_list(self.player[0], self.enemies[1]) or
             arcade.check_for_collision_with_list(self.player[0], self.projectiles[0]) or
@@ -201,6 +198,7 @@ class GameWindow(arcade.Window):
             self.player[0].color = arcade.color.RED
         else:
             self.player[0].color = arcade.color.WHITE
+        """
 
         for left_enemy in self.enemies[0]:
             if arcade.check_for_collision_with_list(left_enemy, self.projectiles[1]):
@@ -221,10 +219,10 @@ class GameWindow(arcade.Window):
         
         self.cycle_phase()
         if self.phase == GamePhase.WAR_START:
-            if random.random() < 0.02:
-                self.enemies[0].append(Archer(800, 100 + 400 * random.random(), Direction.LEFT, self.projectiles[0], self.enemies[1], image="assets/images/Archer_Red.png"))
-            if random.random() < 0.02:
-                self.enemies[1].append(Archer(0, 100 + 400 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0], image="assets/images/Archer_Yellow.png"))
+            if random.random() < 0.2:
+                self.enemies[0].append(Archer(1500, 100 + 5000 * random.random(), Direction.LEFT, self.projectiles[0], self.enemies[1], image="assets/images/Archer_Red.png"))
+            if random.random() < 0.2:
+                self.enemies[1].append(Archer(300, 100 + 5000 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0], image="assets/images/Archer_Yellow.png"))
 
         if self.phase == GamePhase.WAR_END:
             self.enemies[0].clear()
