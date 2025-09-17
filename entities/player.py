@@ -68,13 +68,18 @@ class Player(arcade.Sprite):
             }
         }
 
-        # État initial
         self.state = "idle"
         self.frame_index = 0
         self.frame_time = 0.1
         self.texture = self.textures_dict[self.state][self.direction][0]
 
-    def update_animation(self, delta_time: float = 1/60):
+        # --- Vie ---
+        self.max_health = 5
+        self.current_health = self.max_health
+        self.invincible_timer = 0
+        self.heart_texture = arcade.load_texture("assets/images/Heart.png")
+
+    def update_animation(self, delta_time: float = 1 / 60):
         self.frame_time -= delta_time
         if self.frame_time <= 0:
             self.frame_time = 0.1
@@ -82,6 +87,7 @@ class Player(arcade.Sprite):
             frames = self.textures_dict[self.state][self.direction]
             self.frame_index %= len(frames)
             self.texture = frames[self.frame_index]
+
 
     def update(self, delta_time = None):
         dt = delta_time if delta_time else 1/60
@@ -114,18 +120,21 @@ class Player(arcade.Sprite):
         if arcade.check_for_collision_with_list(self, self.solid_decorations) and not already_collided:
             self.center_x -= move_x
 
+
         move_y = self.change_y * dt
+
         self.center_y += move_y
         if arcade.check_for_collision_with_list(self, self.solid_decorations) and not already_collided:
             self.center_y -= move_y
 
-        # Définir état
+        # État
         self.state = "walk" if self.change_x != 0 or self.change_y != 0 else "idle"
+
 
         if self.is_brooming:
             self.state = "broom"
 
-        # Définir direction
+
         if self.change_x > 0:
             self.direction = Direction.RIGHT
         elif self.change_x < 0:
@@ -135,9 +144,63 @@ class Player(arcade.Sprite):
         elif self.change_y < 0:
             self.direction = Direction.DOWN
 
-        # Mise à jour animation
+        # Animation
         self.update_animation(delta_time)
 
+        # Invincibilité
+        if self.invincible_timer > 0:
+            self.invincible_timer -= delta_time if delta_time else 1 / 60
+
+
+        if self.invincible_timer > 0:
+    # clignotement quand invincible
+            if int(self.invincible_timer * 10) % 2 == 0:
+                self.alpha = 128   # semi-transparent
+            else:
+                self.alpha = 255   # normal
+        else:
+            self.alpha = 255
+
+    def draw(self):
+        arcade.draw_texture_rect(
+            self.texture,
+            rect=arcade.LBWH(
+                self.center_x - self.width / 2,
+                self.center_y - self.height / 2,
+                self.width,
+                self.height
+            ),
+            angle=self.angle,
+            alpha=255
+        )
+
+        spacing = 10   # espace entre les coeurs
+        offset_y = 10  # hauteur au-dessus du joueur
+        for i in range(self.current_health):
+            arcade.draw_texture_rect(
+                self.heart_texture,
+                rect=arcade.LBWH(
+                    self.center_x - (self.current_health - 1) * spacing / 2 + i * spacing - 10,
+                    self.center_y + offset_y - 10,
+                    20, 20  # largeur, hauteur du coeur affiché
+                ),
+                angle=0,
+                alpha=255
+            )
+
+
+
+
+    # --- Vie ---
+    def take_damage(self, amount=1):
+        if self.invincible_timer <= 0:  # applique les dégâts seulement si pas invincible
+            self.current_health = max(0, self.current_health - amount)
+            self.invincible_timer = 1.0  # 1 seconde d’invincibilité
+
+    def heal(self, amount=1):
+        self.current_health = min(self.max_health, self.current_health + amount)
+
+    # --- Contrôles ---
     def on_key_press(self, symbol, modifiers):
         if symbol == arcade.key.SPACE:
             self.is_brooming = True
@@ -150,8 +213,7 @@ class Player(arcade.Sprite):
             # Check if we are starting to broom a dead enemy
             for enemy_list in self.enemy_lists:
                 for enemy in enemy_list:
-                    # Assuming enemy has an 'is_dead' attribute
-                    if arcade.check_for_collision(self, enemy) and getattr(enemy, 'is_dead', False):
+                    if arcade.check_for_collision(self, enemy) and enemy.is_dead:
                         self.brooming_enemy = enemy
                         self.broom_timer = 0
                         return # Found an enemy to broom, stop checking

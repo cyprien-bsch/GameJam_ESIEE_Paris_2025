@@ -4,9 +4,7 @@ class Dialogue:
     def __init__(self):
         self.dialogues = {
             "knight_intro": [
-                "Chevalier: Halt, voyageur!",
-                "Player: Qui êtes-vous?",
-                "Chevalier: Je suis le gardien de ce chemin."
+                "Chevalier: cc sava? ah nan j'men fou",
             ]
         }
         self.current_dialogue = None
