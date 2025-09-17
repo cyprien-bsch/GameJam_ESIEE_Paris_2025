@@ -8,26 +8,10 @@ from utils.dialogue import Dialogue
 from entities.archer import Archer
 from entities.peon import Peon
 from entities.projectiles import Projectile
-from enum import Enum
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT
 import random
-
-class GamePhase(Enum):
-    MENU = 1
-    REST = 2
-    WAR_START = 3
-    IN_WAR = 4
-    WAR_END = 5
-    GAME_OVER = 0
-
-def phase_length(phase: GamePhase) -> int:
-    if phase == GamePhase.REST:
-        return 1
-    if phase == GamePhase.WAR_START:
-        return 5
-    if phase == GamePhase.IN_WAR:
-        return 30
-    return 0
+from core.game_phases import GamePhase, phase_length
+from core.scene_manager import SceneManager, GameScene
 
 class GameWindow(arcade.Window):
     def __init__(self, width, height, title):
@@ -47,6 +31,7 @@ class GameWindow(arcade.Window):
         self.knight_heart_texture = arcade.load_texture("assets/images/Heart.png")
         self.physics_engine = None
         self.dialogue_manager = Dialogue()
+        self.scene_manager = None  # Sera initialisé dans setup()
         self.paused = False 
         self._bgm_sound = None
         self._bgm_player = None
@@ -87,15 +72,18 @@ class GameWindow(arcade.Window):
             self.scene = arcade.Scene.from_tilemap(self.tile_map)
         except Exception as e:
             print(f"Warning: failed to load tilemap: {e}")
+            
+        # Initialiser le gestionnaire de scènes
+        self.scene_manager = SceneManager(self, self.dialogue_manager)
 
         # 2) Extract collision objects from the Tiled map (objects with class/type 'collision')
         try:
             tree = ET.parse("assets/map/Map.tmx")
             root = tree.getroot()
 
-            map_height_tiles = int(root.attrib.get("height", "0"))
-            tile_height = int(root.attrib.get("tileheight", "0"))
-            total_map_height_px = map_height_tiles * tile_height
+            self.map_height_tiles = int(root.attrib.get("height", "0"))
+            self.tile_height = int(root.attrib.get("tileheight", "0"))
+            self.total_map_height_px = self.map_height_tiles * self.tile_height
 
             for obj_group in root.findall("objectgroup"):
                 layer_name = obj_group.attrib.get("name", "").lower()
@@ -116,7 +104,7 @@ class GameWindow(arcade.Window):
 
                         # Convert Tiled (top-left origin) to Arcade (bottom-left origin)
                         center_x = x + width / 2.0
-                        center_y = total_map_height_px - (y + height / 2.0)
+                        center_y = self.total_map_height_px - (y + height / 2.0)
 
                         collider = arcade.SpriteSolidColor(int(max(1, width)), int(max(1, height)), color=(0, 0, 0, 0))
                         collider.center_x = center_x
@@ -176,8 +164,10 @@ class GameWindow(arcade.Window):
 
 
         with self.gui_camera.activate():
-            # HUD texte
-            arcade.draw_text(f"Phase: {self.phase.name}", 10, self.height - 20, arcade.color.WHITE, 14)
+            # Afficher l'objectif et la progression de la scène actuelle
+            if self.scene_manager:
+                self.scene_manager.draw_objective(self.width, self.height)
+                
             self.dialogue_manager.draw(self.width, self.height)
 
             if self.paused:
@@ -255,7 +245,10 @@ class GameWindow(arcade.Window):
         dt = min(max(delta_time, 0.0), 1/30)
         self.cycle_phase()
         
-        self.cycle_phase()
+        # Mettre à jour le gestionnaire de scènes
+        if self.scene_manager:
+            self.scene_manager.update(dt)
+        
         if self.phase == GamePhase.WAR_START:
             if random.random() < 0.05:
                 self.enemies[0].append(Peon(1500, self.knight[0].center_y + 600 * random.random(), Direction.LEFT, self.enemies[1], image="assets/images/Warrior_Red.png"))
@@ -292,6 +285,7 @@ class GameWindow(arcade.Window):
         self.projectiles[1].clear()
         self.solid_decorations.clear()
         self.ui_manager.clear()
+        self.scene_manager = None  # Réinitialiser le gestionnaire de scènes
         self.setup()
 
     def on_key_press(self, symbol, modifiers):
