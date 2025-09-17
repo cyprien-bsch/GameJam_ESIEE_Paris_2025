@@ -243,6 +243,8 @@ class GameWindow(arcade.Window):
             all_projectiles.extend(self.projectiles[1])
             knight_hit_projectiles = arcade.check_for_collision_with_list(knight, all_projectiles)
             if knight_hit_projectiles:
+                if knight.invincible_timer <= 0:
+                    knight.take_damage(1)
                 for projectile in knight_hit_projectiles:
                     projectile.remove_from_sprite_lists()
 
@@ -282,15 +284,33 @@ class GameWindow(arcade.Window):
             self.scene_manager.update(dt)
         
         if self.phase == GamePhase.WAR_START:
-            if random.random() < 0.05:
-                self.enemies[0].append(Peon(1500, self.knight[0].center_y + 600 * random.random(), Direction.LEFT, self.enemies[1], image="assets/images/Warrior_Red.png"))
-            if random.random() < 0.05:
-                self.enemies[1].append(Peon(300, self.knight[0].center_y + 600 * random.random(), Direction.RIGHT, self.enemies[0], image="assets/images/Warrior_Yellow.png"))
+            # Create combined target lists that include knight, player, and opposing enemies
+            red_team_targets = arcade.SpriteList()
+            yellow_team_targets = arcade.SpriteList()
+            
+            # Add knight and player as targets for both teams
+            if len(self.knight) > 0:
+                red_team_targets.append(self.knight[0])
+                yellow_team_targets.append(self.knight[0])
+            if len(self.player) > 0:
+                red_team_targets.append(self.player[0])
+                yellow_team_targets.append(self.player[0])
+            
+            # Add opposing team enemies as targets
+            for enemy in self.enemies[1]:  # Yellow enemies are targets for red team
+                red_team_targets.append(enemy)
+            for enemy in self.enemies[0]:  # Red enemies are targets for yellow team
+                yellow_team_targets.append(enemy)
 
             if random.random() < 0.05:
-                self.enemies[0].append(Archer(1500, self.knight[0].center_y + 600 * random.random(), Direction.LEFT, self.projectiles[0], self.enemies[1], image="assets/images/Archer_Red.png", team=0))
+                self.enemies[0].append(Peon(1500, self.knight[0].center_y + 600 * random.random(), Direction.LEFT, red_team_targets, image="assets/images/Warrior_Red.png"))
             if random.random() < 0.05:
-                self.enemies[1].append(Archer(300, self.knight[0].center_y + 600 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0], image="assets/images/Archer_Yellow.png", team=1))
+                self.enemies[1].append(Peon(300, self.knight[0].center_y + 600 * random.random(), Direction.RIGHT, yellow_team_targets, image="assets/images/Warrior_Yellow.png"))
+
+            if random.random() < 0.05:
+                self.enemies[0].append(Archer(1500, self.knight[0].center_y + 600 * random.random(), Direction.LEFT, self.projectiles[0], red_team_targets, image="assets/images/Archer_Red.png", team=0))
+            if random.random() < 0.05:
+                self.enemies[1].append(Archer(300, self.knight[0].center_y + 600 * random.random(), Direction.RIGHT, self.projectiles[1], yellow_team_targets, image="assets/images/Archer_Yellow.png", team=1))
 
 
 

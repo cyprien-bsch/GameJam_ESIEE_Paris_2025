@@ -32,6 +32,13 @@ class Knight(BaseCharacter):
         self.init_anim_frames()
         self.current_health = 5
         self.max_health = 5
+        self.is_dead = False
+
+    def die(self):
+        """Handle knight death"""
+        self.is_dead = True
+        self.current_health = 0
+        self.alpha = 128  # Make knight semi-transparent when dead
 
 
     def init_anim_frames(self):
