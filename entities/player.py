@@ -27,7 +27,9 @@ class Player(arcade.Sprite):
         self.BROOM_TIME_TO_REMOVE = 3.0
 
         self.init_anim_frames()
-        arcade.play_sound(self.hit_sound)
+
+        self.hit_sound = arcade.load_sound("assets/sounds/Hit.m4a")
+        
 
     def init_anim_frames(self):
         # Taille d'une frame
