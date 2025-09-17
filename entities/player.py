@@ -28,7 +28,7 @@ class Player(arcade.Sprite):
 
         self.init_anim_frames()
 
-def init_anim_frames(self):
+    def init_anim_frames(self):
         # Taille d'une frame
         self.frame_width = 32
         self.frame_height = 32
@@ -213,8 +213,7 @@ def init_anim_frames(self):
             # Check if we are starting to broom a dead enemy
             for enemy_list in self.enemy_lists:
                 for enemy in enemy_list:
-                    # Assuming enemy has an 'is_dead' attribute
-                    if arcade.check_for_collision(self, enemy) and getattr(enemy, 'is_dead', False):
+                    if arcade.check_for_collision(self, enemy) and enemy.is_dead:
                         self.brooming_enemy = enemy
                         self.broom_timer = 0
                         return # Found an enemy to broom, stop checking

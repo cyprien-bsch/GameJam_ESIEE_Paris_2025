@@ -25,7 +25,7 @@ def phase_length(phase: GamePhase) -> int:
     if phase == GamePhase.WAR_START:
         return 5
     if phase == GamePhase.IN_WAR:
-        return 200
+        return 30
     if phase == GamePhase.WAR_END:
         return 3
     return 0
@@ -156,6 +156,8 @@ class GameWindow(arcade.Window):
             if self.scene is not None:
                 self.scene.draw()
             self.player.draw()
+            for p in self.player:
+                p.draw()
             self.knight.draw()
             for enemy_list in self.enemies:
                 enemy_list.draw()
@@ -214,16 +216,19 @@ class GameWindow(arcade.Window):
         return arcade.check_for_collision_with_list(sprite, self.solid_decorations) or \
                arcade.check_for_collision_with_list(sprite, self.knight)
 
+    def filter_out_dead_enemies(self, enemy_list: arcade.SpriteList) -> arcade.SpriteList:
+        return arcade.SpriteList([enemy for enemy in enemy_list if not getattr(enemy, 'is_dead', False)])
+
     def check_collision(self):
-        """
-        if (arcade.check_for_collision_with_list(self.player[0], self.enemies[0]) or
-            arcade.check_for_collision_with_list(self.player[0], self.enemies[1]) or
-            arcade.check_for_collision_with_list(self.player[0], self.projectiles[0]) or
-            arcade.check_for_collision_with_list(self.player[0], self.projectiles[1])):
-            self.player[0].color = arcade.color.RED
-        else:
-            self.player[0].color = arcade.color.WHITE
-        """
+        player = self.player[0]
+        if (arcade.check_for_collision_with_list(player, self.filter_out_dead_enemies(self.enemies[0])) or
+            arcade.check_for_collision_with_list(player, self.filter_out_dead_enemies(self.enemies[1])) or
+            arcade.check_for_collision_with_list(player, self.projectiles[0]) or
+            arcade.check_for_collision_with_list(player, self.projectiles[1])):
+            player.color = arcade.color.RED
+            if player.invincible_timer <= 0:   # éviter de perdre tous les cœurs d'un coup
+                player.take_damage(1)          # <-- il perd 1 cœur
+                player.invincible_timer = 1.0
 
         for left_enemy in self.enemies[0]:
             if arcade.check_for_collision_with_list(left_enemy, self.projectiles[1]):
