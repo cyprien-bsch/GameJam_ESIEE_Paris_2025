@@ -25,9 +25,7 @@ def phase_length(phase: GamePhase) -> int:
     if phase == GamePhase.WAR_START:
         return 5
     if phase == GamePhase.IN_WAR:
-        return 200
-    if phase == GamePhase.WAR_END:
-        return 3
+        return 30
     return 0
 
 class GameWindow(arcade.Window):
@@ -45,6 +43,7 @@ class GameWindow(arcade.Window):
         self.phase_timer = 0
         self.camera = arcade.camera.Camera2D()  # caméra pour la scène
         self.gui_camera = arcade.camera.Camera2D()  # caméra fixe pour HUD
+        self.knight_heart_texture = arcade.load_texture("assets/images/Heart.png")
         self.physics_engine = None
         self.dialogue_manager = Dialogue()
         self.paused = False 
@@ -164,6 +163,8 @@ class GameWindow(arcade.Window):
             if self.scene is not None:
                 self.scene.draw()
             self.player.draw()
+            for p in self.player:
+                p.draw()
             self.knight.draw()
             for enemy_list in self.enemies:
                 enemy_list.draw()
@@ -171,7 +172,11 @@ class GameWindow(arcade.Window):
                 projectile_list.draw()
             self.solid_decorations.draw()
 
+
+
         with self.gui_camera.activate():
+            # HUD texte
+            arcade.draw_text(f"Phase: {self.phase.name}", 10, self.height - 20, arcade.color.WHITE, 14)
             self.dialogue_manager.draw(self.width, self.height)
 
             if self.paused:
@@ -194,20 +199,43 @@ class GameWindow(arcade.Window):
             angle=0
         )
 
+            # HUD coeurs
+            if len(self.knight) > 0:
+                for i in range(self.knight[0].current_health):
+                    arcade.draw_texture_rect(
+                        self.knight_heart_texture,
+                        rect=arcade.LBWH(30 + i * 20, 0, 40, 40),
+                        angle=0,
+                        alpha=255
+                    )
+            
+            if self.player[0].current_health <= 0:
+                arcade.draw_text(
+                    "GAME OVER",
+                    self.width // 2, self.height // 2,
+                    arcade.color.RED,
+                    40,
+                    anchor_x="center", anchor_y="center"
+                )
+
+
     def is_in_collidable_objects(self, sprite: arcade.Sprite) -> bool:
         return arcade.check_for_collision_with_list(sprite, self.solid_decorations) or \
                arcade.check_for_collision_with_list(sprite, self.knight)
 
+    def filter_out_dead_enemies(self, enemy_list: arcade.SpriteList) -> arcade.SpriteList:
+        return arcade.SpriteList([enemy for enemy in enemy_list if not getattr(enemy, 'is_dead', False)])
+
     def check_collision(self):
-        """
-        if (arcade.check_for_collision_with_list(self.player[0], self.enemies[0]) or
-            arcade.check_for_collision_with_list(self.player[0], self.enemies[1]) or
-            arcade.check_for_collision_with_list(self.player[0], self.projectiles[0]) or
-            arcade.check_for_collision_with_list(self.player[0], self.projectiles[1])):
-            self.player[0].color = arcade.color.RED
-        else:
-            self.player[0].color = arcade.color.WHITE
-        """
+        player = self.player[0]
+        if (arcade.check_for_collision_with_list(player, self.filter_out_dead_enemies(self.enemies[0])) or
+            arcade.check_for_collision_with_list(player, self.filter_out_dead_enemies(self.enemies[1])) or
+            arcade.check_for_collision_with_list(player, self.projectiles[0]) or
+            arcade.check_for_collision_with_list(player, self.projectiles[1])):
+            player.color = arcade.color.RED
+            if player.invincible_timer <= 0:   # éviter de perdre tous les cœurs d'un coup
+                player.take_damage(1)          # <-- il perd 1 cœur
+                player.invincible_timer = 1.0
 
         for left_enemy in self.enemies[0]:
             if arcade.check_for_collision_with_list(left_enemy, self.projectiles[1]):
@@ -233,11 +261,6 @@ class GameWindow(arcade.Window):
             if random.random() < 0.2:
                 self.enemies[1].append(Archer(300, 100 + 5000 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0], image="assets/images/Archer_Yellow.png"))
 
-        if self.phase == GamePhase.WAR_END:
-            self.enemies[0].clear()
-            self.enemies[1].clear()
-            self.projectiles[0].clear()
-            self.projectiles[1].clear()
 
         self.player.update(dt)
         self.knight.update(dt)
