@@ -39,7 +39,7 @@ class Knight(arcade.Sprite):
         self.frame_width = 32
         self.frame_height = 32
         self.columns = 6
-        self.anim_types = ["idle", "walk"]
+        self.anim_types = ["idle", "walk", "_", "", "attack"]
 
         right_facing_textures = AnimationUtil.load_textures_from_spritesheet(
             "assets/images/MiniCavalierMan.png",
@@ -71,6 +71,16 @@ class Knight(arcade.Sprite):
                 Direction.UP_LEFT: left_facing_textures["walk"],
                 Direction.DOWN_RIGHT: right_facing_textures["walk"],
                 Direction.DOWN_LEFT: left_facing_textures["walk"],
+            },
+            "attack": {
+                Direction.RIGHT: right_facing_textures["attack"],
+                Direction.LEFT: left_facing_textures["attack"],
+                Direction.UP: right_facing_textures["attack"],
+                Direction.DOWN: left_facing_textures["attack"],
+                Direction.UP_RIGHT: right_facing_textures["attack"],
+                Direction.UP_LEFT: left_facing_textures["attack"],
+                Direction.DOWN_RIGHT: right_facing_textures["attack"],
+                Direction.DOWN_LEFT: left_facing_textures["attack"],
             }
         }
 
@@ -141,6 +151,7 @@ class Knight(arcade.Sprite):
 
         self.max_health = 5
         self.current_health = self.max_health
+        
 
     def take_damage(self, amount=1):
         self.current_health = max(0, self.current_health - amount)
@@ -148,5 +159,3 @@ class Knight(arcade.Sprite):
     def heal(self, amount=1):
         self.current_health = min(self.max_health, self.current_health + amount)
 
-
-        self.update_animation(delta_time)

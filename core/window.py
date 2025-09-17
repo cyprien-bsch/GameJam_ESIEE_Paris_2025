@@ -6,6 +6,7 @@ from entities.enemy import Enemy, Direction
 from entities.knight import Knight
 from utils.dialogue import Dialogue
 from entities.archer import Archer
+from entities.peon import Peon
 from entities.projectiles import Projectile
 from enum import Enum
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT
@@ -26,8 +27,6 @@ def phase_length(phase: GamePhase) -> int:
         return 5
     if phase == GamePhase.IN_WAR:
         return 30
-    if phase == GamePhase.WAR_END:
-        return 3
     return 0
 
 class GameWindow(arcade.Window):
@@ -49,12 +48,21 @@ class GameWindow(arcade.Window):
         self.physics_engine = None
         self.dialogue_manager = Dialogue()
         self.paused = False 
+        self._bgm_sound = None
+        self._bgm_player = None
 
         # Gestionnaire UI
         self.ui_manager = UIManager()
         self.ui_manager.enable()
         self.play_button = None
         self.setup_menu()
+
+        # Background music: load and start looping immediately (menu + gameplay)
+        try:
+            self._bgm_sound = arcade.Sound("assets/music/broom&doom_main_theme.mp3", streaming=True)
+            self._bgm_player = self._bgm_sound.play(loop=True, volume=0.6)
+        except Exception as e:
+            print(f"Warning: failed to start background music: {e}")
 
     def center_camera_to_sprite(self, sprite: arcade.Sprite):
         self.camera.position = (sprite.center_x, sprite.center_y)
@@ -197,7 +205,7 @@ class GameWindow(arcade.Window):
                 for i in range(self.knight[0].current_health):
                     arcade.draw_texture_rect(
                         self.knight_heart_texture,
-                        rect=arcade.LBWH(30 + i * 20, self.height - 62, 40, 40),
+                        rect=arcade.LBWH(30 + i * 20, 0, 40, 40),
                         angle=0,
                         alpha=255
                     )
@@ -249,16 +257,17 @@ class GameWindow(arcade.Window):
         
         self.cycle_phase()
         if self.phase == GamePhase.WAR_START:
-            if random.random() < 0.2:
-                self.enemies[0].append(Archer(1500, 100 + 5000 * random.random(), Direction.LEFT, self.projectiles[0], self.enemies[1], image="assets/images/Archer_Red.png"))
-            if random.random() < 0.2:
-                self.enemies[1].append(Archer(300, 100 + 5000 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0], image="assets/images/Archer_Yellow.png"))
+            if random.random() < 0.05:
+                self.enemies[0].append(Peon(1500, self.knight[0].center_y + 600 * random.random(), Direction.LEFT, self.enemies[1], image="assets/images/Warrior_Red.png"))
+            if random.random() < 0.05:
+                self.enemies[1].append(Peon(300, self.knight[0].center_y + 600 * random.random(), Direction.RIGHT, self.enemies[0], image="assets/images/Warrior_Yellow.png"))
 
-        if self.phase == GamePhase.WAR_END:
-            self.enemies[0].clear()
-            self.enemies[1].clear()
-            self.projectiles[0].clear()
-            self.projectiles[1].clear()
+            if random.random() < 0.05:
+                self.enemies[0].append(Archer(1500, self.knight[0].center_y + 600 * random.random(), Direction.LEFT, self.projectiles[0], self.enemies[1], image="assets/images/Archer_Red.png"))
+            if random.random() < 0.05:
+                self.enemies[1].append(Archer(300, self.knight[0].center_y + 600 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0], image="assets/images/Archer_Yellow.png"))
+
+
 
         self.player.update(dt)
         self.knight.update(dt)
@@ -342,3 +351,18 @@ class GameWindow(arcade.Window):
 
         # Ajouter le layout au UIManager
         self.ui_manager.add(layout)
+
+    def on_close(self):
+        # Stop background music when closing the window
+        try:
+            if self._bgm_player is not None:
+                self._bgm_player.pause()
+                self._bgm_player = None
+        except Exception:
+            pass
+        try:
+            if self._bgm_sound is not None:
+                self._bgm_sound = None
+        except Exception:
+            pass
+        return super().on_close()
