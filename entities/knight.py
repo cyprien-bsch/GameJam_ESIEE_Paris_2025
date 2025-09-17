@@ -24,11 +24,17 @@ class Knight(arcade.Sprite):
         self.speed = 64           # Pixels/seconde
         self.path = [
             (Direction.RIGHT, 5),  # Avancer 5 cases à droite
-            (Direction.UP, 3)      # Puis 3 cases vers le haut
+            (Direction.UP, 3),     # Puis 3 cases vers le haut
+            (Direction.LEFT, 5),   # Puis 5 cases à gauche
+            (Direction.UP, 2)    # Puis 2 cases vers le haut
         ]
         self.current_step = 0
         self.steps_moved = 0
 
+        self.init_anim_frames()
+
+
+    def init_anim_frames(self):
         # Taille d'une frame
         self.frame_width = 32
         self.frame_height = 32
@@ -67,6 +73,7 @@ class Knight(arcade.Sprite):
         self.frame_index = 0
         self.frame_time = 0.1
         self.texture = self.textures_dict[self.state][self.direction][0]
+
 
     def update_animation(self, delta_time: float = 1/60):
         self.frame_time -= delta_time
