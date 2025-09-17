@@ -134,7 +134,7 @@ class GameWindow(arcade.Window):
         player_sprite.scale = 2
         self.player.append(player_sprite)
 
-        knight_sprite = Knight(900, 800, self.solid_decorations)
+        knight_sprite = Knight(900, 800, self.solid_decorations, self.enemies)
         knight_sprite.scale = 2
         self.knight.append(knight_sprite)
         
