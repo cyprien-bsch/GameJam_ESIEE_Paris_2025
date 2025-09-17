@@ -1,4 +1,5 @@
 import arcade
+import xml.etree.ElementTree as ET
 from entities.player import Player
 from entities.enemy import Enemy, Direction
 from enum import Enum
@@ -33,12 +34,14 @@ class GameWindow(arcade.Window):
         #left and right projectiles 
         self.projectiles = [arcade.SpriteList(), arcade.SpriteList()]
         self.solid_decorations = arcade.SpriteList()
-        self.background = None
+        self.tile_map = None
+        self.scene = None
         self.set_mouse_visible(True)
         self.phase = GamePhase.MENU
         self.phase_timer = 0
         self.camera = arcade.camera.Camera2D()  # caméra pour la scène
         self.gui_camera = arcade.camera.Camera2D()  # caméra fixe pour HUD
+        self.physics_engine = None
 
     def center_camera_to_sprite(self, sprite: arcade.Sprite):
         target_pos = (sprite.center_x, sprite.center_y)
@@ -63,21 +66,71 @@ class GameWindow(arcade.Window):
             print("Phase changed to:", self.phase)
 
     def setup(self):
+        # 1) Load and render the Tiled map
+        try:
+            self.tile_map = arcade.load_tilemap("assets/map/Map.tmx", scaling=1.0)
+            self.scene = arcade.Scene.from_tilemap(self.tile_map)
+        except Exception as e:
+            print(f"Warning: failed to load tilemap: {e}")
+
+        # 2) Extract collision objects from the Tiled map (objects with class/type 'collision')
+        try:
+            tree = ET.parse("assets/map/Map.tmx")
+            root = tree.getroot()
+
+            map_height_tiles = int(root.attrib.get("height", "0"))
+            tile_height = int(root.attrib.get("tileheight", "0"))
+            total_map_height_px = map_height_tiles * tile_height
+
+            for obj_group in root.findall("objectgroup"):
+                layer_name = obj_group.attrib.get("name", "").lower()
+                is_collision_layer = layer_name in {"collision", "collisions", "obstacles"}
+
+                for obj in obj_group.findall("object"):
+                    obj_class = obj.attrib.get("class") or obj.attrib.get("type")
+                    is_collision_class = (obj_class or "").lower() == "collision"
+
+                    if not (is_collision_layer or is_collision_class):
+                        continue
+
+                    try:
+                        x = float(obj.attrib.get("x", 0))
+                        y = float(obj.attrib.get("y", 0))
+                        width = float(obj.attrib.get("width", 0))
+                        height = float(obj.attrib.get("height", 0))
+
+                        # Convert Tiled (top-left origin) to Arcade (bottom-left origin)
+                        center_x = x + width / 2.0
+                        center_y = total_map_height_px - (y + height / 2.0)
+
+                        collider = arcade.SpriteSolidColor(int(max(1, width)), int(max(1, height)), color=(0, 0, 0, 0))
+                        collider.center_x = center_x
+                        collider.center_y = center_y
+                        # Keep invisible for gameplay; comment out next line to visualize
+                        collider.alpha = 0
+                        self.solid_decorations.append(collider)
+                    except Exception as inner_e:
+                        print(f"Warning: failed to create collider from object: {inner_e}")
+        except Exception as e:
+            print(f"Warning: failed to parse collisions from TMX: {e}")
+
+        # 3) Create player and physics using the collision sprites
         self.player.append(Player(100, 100, self.solid_decorations))
+        try:
+            if len(self.player) > 0 and isinstance(self.solid_decorations, arcade.SpriteList):
+                self.physics_engine = arcade.PhysicsEngineSimple(self.player[0], self.solid_decorations)
+        except Exception as e:
+            print(f"Warning: failed to create physics engine: {e}")
+
+        # Example enemies for existing gameplay loop
         self.enemies[0].append(Enemy(400, 300, Direction.LEFT, self.projectiles[0]))
         self.enemies[1].append(Enemy(600, 300, Direction.RIGHT, self.projectiles[1]))
-        self.background = arcade.load_texture("assets/images/background.png")
-        for i in range(25):
-            self.solid_decorations.append(arcade.Sprite(":resources:/images/tiles/rock.png", 0.5, center_x=random.random()*SCREEN_WIDTH, center_y=random.random()*SCREEN_HEIGHT))
 
     def on_draw(self):
         self.clear()
         with self.camera.activate():
-            arcade.draw_texture_rect(
-                self.background,
-                rect=arcade.LBWH(-self.width, -self.height, self.width * 2, self.height * 2),
-                angle=0, alpha=255
-            )
+            if self.scene is not None:
+                self.scene.draw()
             self.player.draw()
             for enemy_list in self.enemies:
                 enemy_list.draw()
@@ -131,7 +184,9 @@ class GameWindow(arcade.Window):
             projectile_list.update(delta_time)
         self.check_collision()
 
-        self.center_camera_to_sprite(self.enemies[0][0] if len(self.enemies[0]) > 0 else self.enemies[1][0] if len(self.enemies[1]) > 0 else self.player[0])
+        # Center camera on the player
+        if len(self.player) > 0:
+            self.center_camera_to_sprite(self.player[0])
 
 
     def on_key_press(self, symbol, modifiers):
@@ -139,9 +194,7 @@ class GameWindow(arcade.Window):
             arcade.close_window()
         if symbol in [arcade.key.UP, arcade.key.DOWN, arcade.key.LEFT, arcade.key.RIGHT]:
             self.player[0].on_key_press(symbol, modifiers)
-            self.player.update()
     
     def on_key_release(self, symbol, modifiers):
         if symbol in [arcade.key.UP, arcade.key.DOWN, arcade.key.LEFT, arcade.key.RIGHT]:
             self.player[0].on_key_release(symbol, modifiers)
-            self.player.update()
