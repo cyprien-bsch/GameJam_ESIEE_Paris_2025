@@ -10,13 +10,14 @@ from utils.animation import AnimationUtil
 
 
 class Archer(Enemy):
-    def __init__(self, x: float, y: float, direction: Direction = Direction.LEFT, projectiles: arcade.SpriteList = None, targets: arcade.SpriteList = None, image: str = "assets/images/Archer_Red.png"):
+    def __init__(self, x: float, y: float, direction: Direction = Direction.LEFT, projectiles: arcade.SpriteList = None, targets: arcade.SpriteList = None, image: str = "assets/images/Archer_Red.png", team: int = 0):
         super().__init__(x, y, direction, projectiles, targets)
         self.arrow_speed = random.uniform(4, 6)
         self.shoot_delay = 30
         self.shoot_timer = 0
         self.scale = 0.5
         self.image = image
+        self.team = team  # 0 for left team (red), 1 for right team (yellow)
 
         self.init_anim_frames()
 
@@ -129,5 +130,5 @@ class Archer(Enemy):
                 dx = -target_x * (self.arrow_speed / distance)
                 dy = -target_y * (self.arrow_speed / distance)
 
-                arrow = Projectile(self.center_x, self.center_y, dx, dy)
+                arrow = Projectile(self.center_x, self.center_y, dx, dy, team=self.team)
                 self.projectiles.append(arrow)

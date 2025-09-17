@@ -214,21 +214,62 @@ class GameWindow(arcade.Window):
 
     def check_collision(self):
         player = self.player[0]
-        if (arcade.check_for_collision_with_list(player, self.filter_out_dead_enemies(self.enemies[0])) or
-            arcade.check_for_collision_with_list(player, self.filter_out_dead_enemies(self.enemies[1])) or
-            arcade.check_for_collision_with_list(player, self.projectiles[0]) or
-            arcade.check_for_collision_with_list(player, self.projectiles[1])):
-            player.color = arcade.color.RED
-            if player.invincible_timer <= 0:   # éviter de perdre tous les cœurs d'un coup
-                player.take_damage(1)          # <-- il perd 1 cœur
-                player.invincible_timer = 1.0
+        
+        # Only check collisions if player is alive
+        if player.current_health > 0:
+            # Check player collision with enemies
+            if (arcade.check_for_collision_with_list(player, self.filter_out_dead_enemies(self.enemies[0])) or
+                arcade.check_for_collision_with_list(player, self.filter_out_dead_enemies(self.enemies[1]))):
+                player.color = arcade.color.RED
+                if player.invincible_timer <= 0:   # éviter de perdre tous les cœurs d'un coup
+                    player.take_damage(1)          # <-- il perd 1 cœur
+                    player.invincible_timer = 1.0
+            
+            # Check player collision with projectiles from both teams and remove them
+            all_projectiles = arcade.SpriteList()
+            all_projectiles.extend(self.projectiles[0])
+            all_projectiles.extend(self.projectiles[1])
+            
+            hit_projectiles = arcade.check_for_collision_with_list(player, all_projectiles)
+            if hit_projectiles:
+                player.color = arcade.color.RED
+                if player.invincible_timer <= 0:
+                    player.take_damage(1)
+                    player.invincible_timer = 1.0
+                for projectile in hit_projectiles:
+                    projectile.remove_from_sprite_lists()
+        
+        # Check knight collision with projectiles from both teams and remove them
+        if len(self.knight) > 0:
+            knight = self.knight[0]
+            all_projectiles = arcade.SpriteList()
+            all_projectiles.extend(self.projectiles[0])
+            all_projectiles.extend(self.projectiles[1])
+            knight_hit_projectiles = arcade.check_for_collision_with_list(knight, all_projectiles)
+            if knight_hit_projectiles:
+                for projectile in knight_hit_projectiles:
+                    projectile.remove_from_sprite_lists()
 
+        # Check enemy collision with projectiles from opposing teams only
         for left_enemy in self.enemies[0]:
-            if arcade.check_for_collision_with_list(left_enemy, self.projectiles[1]):
-                left_enemy.die()
+            # Only check collision if enemy is alive
+            if not left_enemy.is_dead:
+                # Left enemies (team 0) can only be hit by right team projectiles (team 1)
+                hit_projectiles = [p for p in arcade.check_for_collision_with_list(left_enemy, self.projectiles[1]) if getattr(p, 'team', None) == 1]
+                if hit_projectiles:
+                    left_enemy.die()
+                    for projectile in hit_projectiles:
+                        projectile.remove_from_sprite_lists()
+                    
         for right_enemy in self.enemies[1]:
-            if arcade.check_for_collision_with_list(right_enemy, self.projectiles[0]):
-                right_enemy.die()
+            # Only check collision if enemy is alive
+            if not right_enemy.is_dead:
+                # Right enemies (team 1) can only be hit by left team projectiles (team 0)
+                hit_projectiles = [p for p in arcade.check_for_collision_with_list(right_enemy, self.projectiles[0]) if getattr(p, 'team', None) == 0]
+                if hit_projectiles:
+                    right_enemy.die()
+                    for projectile in hit_projectiles:
+                        projectile.remove_from_sprite_lists()
 
         if arcade.check_for_collision_with_list(self.player[0], self.knight):
             self.dialogue_manager.start("knight_intro")
@@ -251,9 +292,9 @@ class GameWindow(arcade.Window):
                 self.enemies[1].append(Peon(300, self.knight[0].center_y + 600 * random.random(), Direction.RIGHT, self.enemies[0], image="assets/images/Warrior_Yellow.png"))
 
             if random.random() < 0.05:
-                self.enemies[0].append(Archer(1500, self.knight[0].center_y + 600 * random.random(), Direction.LEFT, self.projectiles[0], self.enemies[1], image="assets/images/Archer_Red.png"))
+                self.enemies[0].append(Archer(1500, self.knight[0].center_y + 600 * random.random(), Direction.LEFT, self.projectiles[0], self.enemies[1], image="assets/images/Archer_Red.png", team=0))
             if random.random() < 0.05:
-                self.enemies[1].append(Archer(300, self.knight[0].center_y + 600 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0], image="assets/images/Archer_Yellow.png"))
+                self.enemies[1].append(Archer(300, self.knight[0].center_y + 600 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0], image="assets/images/Archer_Yellow.png", team=1))
 
 
 
