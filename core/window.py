@@ -69,7 +69,7 @@ class GameWindow(arcade.Window):
             print("Phase changed to:", self.phase)
 
     def setup(self):
-        player_sprite = Player(100, 100, self.solid_decorations)
+        player_sprite = Player(100, 100, self.solid_decorations, self.enemies)
         player_sprite.scale = 1.5
         self.player.append(player_sprite)
 
