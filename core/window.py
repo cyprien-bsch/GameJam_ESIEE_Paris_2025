@@ -2,33 +2,16 @@ import arcade
 from arcade.gui import UIManager, UITextureButton
 import xml.etree.ElementTree as ET
 from entities.player import Player
-from entities.enemy import Enemy, Direction
+from entities.direction import Direction
 from entities.knight import Knight
 from utils.dialogue import Dialogue
 from entities.archer import Archer
+from entities.peon import Peon
 from entities.projectiles import Projectile
-from enum import Enum
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT
 import random
-
-class GamePhase(Enum):
-    MENU = 1
-    REST = 2
-    WAR_START = 3
-    IN_WAR = 4
-    WAR_END = 5
-    GAME_OVER = 0
-
-def phase_length(phase: GamePhase) -> int:
-    if phase == GamePhase.REST:
-        return 1
-    if phase == GamePhase.WAR_START:
-        return 5
-    if phase == GamePhase.IN_WAR:
-        return 30
-    if phase == GamePhase.WAR_END:
-        return 3
-    return 0
+from core.game_phases import GamePhase, phase_length
+from core.scene_manager import SceneManager, GameScene
 
 class GameWindow(arcade.Window):
     def __init__(self, width, height, title):
@@ -48,13 +31,23 @@ class GameWindow(arcade.Window):
         self.knight_heart_texture = arcade.load_texture("assets/images/Heart.png")
         self.physics_engine = None
         self.dialogue_manager = Dialogue()
+        self.scene_manager = None  # Sera initialisé dans setup()
         self.paused = False 
+        self._bgm_sound = None
+        self._bgm_player = None
 
         # Gestionnaire UI
         self.ui_manager = UIManager()
         self.ui_manager.enable()
         self.play_button = None
         self.setup_menu()
+
+        # Background music: load and start looping immediately (menu + gameplay)
+        try:
+            self._bgm_sound = arcade.Sound("assets/music/broom&doom_main_theme.mp3", streaming=True)
+            self._bgm_player = self._bgm_sound.play(loop=True, volume=0.6)
+        except Exception as e:
+            print(f"Warning: failed to start background music: {e}")
 
     def center_camera_to_sprite(self, sprite: arcade.Sprite):
         self.camera.position = (sprite.center_x, sprite.center_y)
@@ -79,15 +72,18 @@ class GameWindow(arcade.Window):
             self.scene = arcade.Scene.from_tilemap(self.tile_map)
         except Exception as e:
             print(f"Warning: failed to load tilemap: {e}")
+            
+        # Initialiser le gestionnaire de scènes
+        self.scene_manager = SceneManager(self, self.dialogue_manager)
 
         # 2) Extract collision objects from the Tiled map (objects with class/type 'collision')
         try:
             tree = ET.parse("assets/map/Map.tmx")
             root = tree.getroot()
 
-            map_height_tiles = int(root.attrib.get("height", "0"))
-            tile_height = int(root.attrib.get("tileheight", "0"))
-            total_map_height_px = map_height_tiles * tile_height
+            self.map_height_tiles = int(root.attrib.get("height", "0"))
+            self.tile_height = int(root.attrib.get("tileheight", "0"))
+            self.total_map_height_px = self.map_height_tiles * self.tile_height
 
             for obj_group in root.findall("objectgroup"):
                 layer_name = obj_group.attrib.get("name", "").lower()
@@ -108,7 +104,7 @@ class GameWindow(arcade.Window):
 
                         # Convert Tiled (top-left origin) to Arcade (bottom-left origin)
                         center_x = x + width / 2.0
-                        center_y = total_map_height_px - (y + height / 2.0)
+                        center_y = self.total_map_height_px - (y + height / 2.0)
 
                         collider = arcade.SpriteSolidColor(int(max(1, width)), int(max(1, height)), color=(0, 0, 0, 0))
                         collider.center_x = center_x
@@ -126,7 +122,7 @@ class GameWindow(arcade.Window):
         player_sprite.scale = 2
         self.player.append(player_sprite)
 
-        knight_sprite = Knight(900, 800, self.solid_decorations)
+        knight_sprite = Knight(900, 800, self.solid_decorations, self.enemies)
         knight_sprite.scale = 2
         self.knight.append(knight_sprite)
         
@@ -163,8 +159,10 @@ class GameWindow(arcade.Window):
 
 
         with self.gui_camera.activate():
-            # HUD texte
-            arcade.draw_text(f"Phase: {self.phase.name}", 10, self.height - 20, arcade.color.WHITE, 14)
+            # Afficher l'objectif et la progression de la scène actuelle
+            if self.scene_manager:
+                self.scene_manager.draw_objective(self.width, self.height)
+                
             self.dialogue_manager.draw(self.width, self.height)
 
             if self.paused:
@@ -192,7 +190,7 @@ class GameWindow(arcade.Window):
                 for i in range(self.knight[0].current_health):
                     arcade.draw_texture_rect(
                         self.knight_heart_texture,
-                        rect=arcade.LBWH(30 + i * 20, self.height - 62, 40, 40),
+                        rect=arcade.LBWH(30 + i * 20, 0, 40, 40),
                         angle=0,
                         alpha=255
                     )
@@ -242,18 +240,22 @@ class GameWindow(arcade.Window):
         dt = min(max(delta_time, 0.0), 1/30)
         self.cycle_phase()
         
-        self.cycle_phase()
+        # Mettre à jour le gestionnaire de scènes
+        if self.scene_manager:
+            self.scene_manager.update(dt)
+        
         if self.phase == GamePhase.WAR_START:
-            if random.random() < 0.2:
-                self.enemies[0].append(Archer(1500, 100 + 5000 * random.random(), Direction.LEFT, self.projectiles[0], self.enemies[1], image="assets/images/Archer_Red.png"))
-            if random.random() < 0.2:
-                self.enemies[1].append(Archer(300, 100 + 5000 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0], image="assets/images/Archer_Yellow.png"))
+            if random.random() < 0.05:
+                self.enemies[0].append(Peon(1500, self.knight[0].center_y + 600 * random.random(), Direction.LEFT, self.enemies[1], image="assets/images/Warrior_Red.png"))
+            if random.random() < 0.05:
+                self.enemies[1].append(Peon(300, self.knight[0].center_y + 600 * random.random(), Direction.RIGHT, self.enemies[0], image="assets/images/Warrior_Yellow.png"))
 
-        if self.phase == GamePhase.WAR_END:
-            self.enemies[0].clear()
-            self.enemies[1].clear()
-            self.projectiles[0].clear()
-            self.projectiles[1].clear()
+            if random.random() < 0.05:
+                self.enemies[0].append(Archer(1500, self.knight[0].center_y + 600 * random.random(), Direction.LEFT, self.projectiles[0], self.enemies[1], image="assets/images/Archer_Red.png"))
+            if random.random() < 0.05:
+                self.enemies[1].append(Archer(300, self.knight[0].center_y + 600 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0], image="assets/images/Archer_Yellow.png"))
+
+
 
         self.player.update(dt)
         self.knight.update(dt)
@@ -278,6 +280,7 @@ class GameWindow(arcade.Window):
         self.projectiles[1].clear()
         self.solid_decorations.clear()
         self.ui_manager.clear()
+        self.scene_manager = None  # Réinitialiser le gestionnaire de scènes
         self.setup()
 
     def on_key_press(self, symbol, modifiers):
@@ -326,3 +329,17 @@ class GameWindow(arcade.Window):
         layout.center_y = self.height // 2 - 100
         self.ui_manager.add(layout)
 
+    def on_close(self):
+        # Stop background music when closing the window
+        try:
+            if self._bgm_player is not None:
+                self._bgm_player.pause()
+                self._bgm_player = None
+        except Exception:
+            pass
+        try:
+            if self._bgm_sound is not None:
+                self._bgm_sound = None
+        except Exception:
+            pass
+        return super().on_close()
