@@ -175,7 +175,7 @@ class Player(arcade.Sprite):
         )
 
         spacing = 10   # espace entre les coeurs
-        offset_y = 40  # hauteur au-dessus du joueur
+        offset_y = 10  # hauteur au-dessus du joueur
         for i in range(self.current_health):
             arcade.draw_texture_rect(
                 self.heart_texture,
