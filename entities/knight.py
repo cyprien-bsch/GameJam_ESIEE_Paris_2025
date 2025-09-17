@@ -15,7 +15,6 @@ class Direction(Enum):
     DOWN_RIGHT = 6
     DOWN_LEFT = 7
 
-
 class Knight(arcade.Sprite):
     def __init__(self, x: float, y: float):
         super().__init__()
@@ -143,5 +142,17 @@ class Knight(arcade.Sprite):
         if self.steps_moved >= steps_target:
             self.current_step += 1
             self.steps_moved = 0
+        
+        self.update_animation(delta_time)
+
+        self.max_health = 5
+        self.current_health = self.max_health
+
+    def take_damage(self, amount=1):
+        self.current_health = max(0, self.current_health - amount)
+
+    def heal(self, amount=1):
+        self.current_health = min(self.max_health, self.current_health + amount)
+
 
         self.update_animation(delta_time)
