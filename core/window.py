@@ -26,8 +26,6 @@ def phase_length(phase: GamePhase) -> int:
         return 5
     if phase == GamePhase.IN_WAR:
         return 30
-    if phase == GamePhase.WAR_END:
-        return 3
     return 0
 
 class GameWindow(arcade.Window):
@@ -197,7 +195,7 @@ class GameWindow(arcade.Window):
                 for i in range(self.knight[0].current_health):
                     arcade.draw_texture_rect(
                         self.knight_heart_texture,
-                        rect=arcade.LBWH(30 + i * 20, self.height - 62, 40, 40),
+                        rect=arcade.LBWH(30 + i * 20, 0, 40, 40),
                         angle=0,
                         alpha=255
                     )
@@ -254,11 +252,6 @@ class GameWindow(arcade.Window):
             if random.random() < 0.2:
                 self.enemies[1].append(Archer(300, 100 + 5000 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0], image="assets/images/Archer_Yellow.png"))
 
-        if self.phase == GamePhase.WAR_END:
-            self.enemies[0].clear()
-            self.enemies[1].clear()
-            self.projectiles[0].clear()
-            self.projectiles[1].clear()
 
         self.player.update(dt)
         self.knight.update(dt)
