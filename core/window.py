@@ -258,14 +258,14 @@ class GameWindow(arcade.Window):
         self.cycle_phase()
         if self.phase == GamePhase.WAR_START:
             if random.random() < 0.05:
-                self.enemies[0].append(Peon(1500, 100 + 5000 * random.random(), Direction.LEFT, self.enemies[1], image="assets/images/Warrior_Red.png"))
+                self.enemies[0].append(Peon(1500, self.knight[0].center_y + 600 * random.random(), Direction.LEFT, self.enemies[1], image="assets/images/Warrior_Red.png"))
             if random.random() < 0.05:
-                self.enemies[1].append(Peon(300, 100 + 5000 * random.random(), Direction.RIGHT, self.enemies[0], image="assets/images/Warrior_Yellow.png"))
+                self.enemies[1].append(Peon(300, self.knight[0].center_y + 600 * random.random(), Direction.RIGHT, self.enemies[0], image="assets/images/Warrior_Yellow.png"))
 
-            if random.random() < 0.2:
-                self.enemies[0].append(Archer(1500, 100 + 5000 * random.random(), Direction.LEFT, self.projectiles[0], self.enemies[1], image="assets/images/Archer_Red.png"))
-            if random.random() < 0.2:
-                self.enemies[1].append(Archer(300, 100 + 5000 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0], image="assets/images/Archer_Yellow.png"))
+            if random.random() < 0.05:
+                self.enemies[0].append(Archer(1500, self.knight[0].center_y + 600 * random.random(), Direction.LEFT, self.projectiles[0], self.enemies[1], image="assets/images/Archer_Red.png"))
+            if random.random() < 0.05:
+                self.enemies[1].append(Archer(300, self.knight[0].center_y + 600 * random.random(), Direction.RIGHT, self.projectiles[1], self.enemies[0], image="assets/images/Archer_Yellow.png"))
 
 
 
