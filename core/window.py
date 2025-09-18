@@ -3,7 +3,6 @@ from arcade.gui import UIManager, UITextureButton
 from entities.player import Player
 from entities.direction import Direction
 from entities.knight import Knight
-from entities.goblin import Goblin
 from utils.dialogue import Dialogue
 from entities.projectiles import Projectile
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT
@@ -128,15 +127,6 @@ class GameWindow(arcade.Window):
             spawner_locations, self.enemies, self.projectiles, self.knight, self.player,
             screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT, depth_manager=self.depth_manager
         )
-        test_goblin = Goblin(
-            x=SCREEN_WIDTH // 2 + 100,
-            y=SCREEN_HEIGHT // 2,
-            direction=Direction.LEFT,
-            projectiles=self.projectiles[0],
-            targets=self.knight,
-            team=0
-        )
-        self.enemies[0].append(test_goblin)
         
         # 8) Add all sprites to depth manager for perspective sorting
         self.depth_manager.clear()  # Clear any existing sprites
@@ -559,10 +549,6 @@ class GameWindow(arcade.Window):
             player.center_x = knight.center_x + 30
             player.center_y = knight.center_y
             self.out_of_view_timer = 0
-
-        self.spawned_entities = self.map_manager.spawn_entities(
-        self.player, self.knight, self.enemies
-        )
 
     def start_game(self, event=None):
         self.hide_retry_button()
