@@ -48,6 +48,9 @@ class Knight(BaseCharacter):
         self.hit_flash_duration = 0.15  # Flash red for 0.15 seconds
         self.blink_timer = 0.0
         self.blink_interval = 0.1  # Blink every 0.1 seconds during invincibility
+        
+        # Heart texture for health display
+        self.heart_texture = arcade.load_texture("assets/images/Heart.png")
 
     def take_damage(self, amount=1):
         """Handle taking damage and check for deactivation"""
@@ -61,9 +64,8 @@ class Knight(BaseCharacter):
         self.color = (255, 100, 100)  # Flash red
         self.blink_timer = 0.0  # Reset blink timer
         
-        # Trigger hit feedback effects if inherited from BaseCharacter
-        if hasattr(super(), 'take_damage'):
-            super().take_damage(amount)
+        # Set invincibility timer (from BaseCharacter logic)
+        self.invincible_timer = 1.0
         
         # Check if knight should be deactivated
         if self.current_health <= self.DEACTIVATION_THRESHOLD and not self.is_deactivated:
@@ -322,5 +324,29 @@ class Knight(BaseCharacter):
                 self.mood = "idle"
         
         self.update_animation(delta_time)
+
+    def draw(self):
+        """Custom draw method to display knight with hearts in bottom left corner"""
+        # Draw the knight sprite first
+        super().draw()
+        
+        # Draw hearts in bottom left corner of screen (not relative to knight position)
+        heart_size = 20
+        spacing = 30  # Increased spacing to prevent overlap
+        start_x = 15  # Distance from left edge of screen
+        start_y = 15  # Distance from bottom edge of screen
+        
+        for i in range(self.current_health):
+            arcade.draw_texture_rect(
+                self.heart_texture,
+                rect=arcade.LBWH(
+                    start_x + i * spacing,
+                    start_y,
+                    heart_size,
+                    heart_size
+                ),
+                angle=0,
+                alpha=255
+            )
 
         
