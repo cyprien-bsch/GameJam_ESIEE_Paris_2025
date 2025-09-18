@@ -16,6 +16,8 @@ class Player(arcade.Sprite):
         self.is_brooming = False
         self.direction = Direction.DOWN
 
+        self.brooming_sound = arcade.load_sound("assets/sounds/broom.mp3")
+
         # Brooming attributes
         self.brooming_enemy = None
         self.broom_timer = 0.0
@@ -275,6 +277,7 @@ class Player(arcade.Sprite):
             self.frame_time = 0.1
             self.change_x = 0
             self.change_y = 0
+            arcade.play_sound(self.brooming_sound)
 
             # Check if we are starting to broom a dead enemy
             for enemy_list in self.enemy_lists:
