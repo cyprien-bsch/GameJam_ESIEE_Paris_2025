@@ -457,6 +457,8 @@ class GameWindow(arcade.Window):
         self.setup()
 
     def on_key_press(self, symbol, modifiers):
+        if len(self.player) > 0 and self.player[0].is_dead:
+            return
         
         if self.phase != GamePhase.MENU:
             # Toggle debug mode with F1
@@ -485,10 +487,10 @@ class GameWindow(arcade.Window):
             if symbol == arcade.key.ENTER:
                 self.dialogue_manager.advance()
 
-            if len(self.player) > 0 and self.player[0].is_dead:
-                return
-
+        
     def on_key_release(self, symbol, modifiers):
+        if len(self.player) > 0 and self.player[0].is_dead:
+            return
         if symbol in [arcade.key.UP, arcade.key.DOWN, arcade.key.LEFT, arcade.key.RIGHT,
                       arcade.key.SPACE, arcade.key.Z, arcade.key.Q, arcade.key.S, arcade.key.D]:
             self.player[0].on_key_release(symbol, modifiers)
