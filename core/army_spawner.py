@@ -4,6 +4,7 @@ from typing import Dict, List
 from entities.archer import Archer
 from entities.peon import Peon
 from entities.direction import Direction
+from entities.goblin import Goblin
 
 
 class ArmySpawner:
@@ -193,7 +194,13 @@ class ArmySpawner:
         import random
         
         # 60% Peon, 40% Archer for more variety
-        return "peon" if random.random() < 0.6 else "archer"
+        r = random.random()
+        if r < 0.5:
+            return "peon"
+        elif r < 0.8:
+            return "archer"
+        else:
+            return "goblin"
 
     def spawn_armies(self):
         """
@@ -242,7 +249,7 @@ class ArmySpawner:
                 targets, 
                 image=warrior_image
             )
-        else:  # archer
+        elif unit_type == "archer":
             unit = Archer(
                 spawner[0] + x_offset, 
                 spawner[1] + random.uniform(-30, 30),  # Small random Y offset
@@ -253,6 +260,14 @@ class ArmySpawner:
                 team=team_index
             )
         
+        elif unit_type == "goblin":
+            unit = Goblin(
+                spawner[0] + x_offset,
+                spawner[1] + random.uniform(-30, 30),
+                direction,
+                self.projectiles[team_index],
+                targets
+            )
         # Add to appropriate enemy list
         enemy_list.append(unit)
     
