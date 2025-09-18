@@ -106,10 +106,10 @@ class SceneManager:
             
             # Passer à la scène suivante
             if self.current_scene == GameScene.TUTORIAL_LESSON:
+                self._start_scene(GameScene.ENEMY_ARRIVAL)
+            elif self.current_scene == GameScene.ENEMY_ARRIVAL:
                 self._start_scene(GameScene.TUTORIAL_CLEANING)
             elif self.current_scene == GameScene.TUTORIAL_CLEANING:
-                self._start_scene(GameScene.DRAGON_BATTLE)
-            elif self.current_scene == GameScene.DRAGON_BATTLE:
                 self._start_scene(GameScene.LORD_INCIDENT)
             elif self.current_scene == GameScene.LORD_INCIDENT:
                 self._start_scene(GameScene.NIGHT_SURVIVAL)
@@ -149,11 +149,11 @@ class SceneManager:
             # Section du bas (0-12.5% de la carte)
             section_start = 0
             section_end = section_height
-        elif self.current_scene == GameScene.TUTORIAL_CLEANING:
+        elif self.current_scene == GameScene.ENEMY_ARRIVAL:
             # Section 2 (12.5-25% de la carte)
             section_start = section_height
             section_end = section_height * 2
-        elif self.current_scene == GameScene.DRAGON_BATTLE:
+        elif self.current_scene == GameScene.TUTORIAL_CLEANING:
             # Section 3 (25-37.5% de la carte)
             section_start = section_height * 2
             section_end = section_height * 3
