@@ -36,8 +36,8 @@ class SceneManager:
                 "Écuyer: Mon maître... j'ai essayé d'arriver à temps, mais c'était déjà terminé..."
             ],
             GameScene.ENEMY_ARRIVAL: [
-                "Ennemi du Camp 1: Ce chevalier est de l'autre camp ! Il a tué notre dragon !",
-                "Ennemi du Camp 2: Ce chevalier… il nous provoque, il nous déclare la guerre !",
+                "Ennemi Red: Ce chevalier est de l'autre camp ! Il a tué notre dragon !",
+                "Ennemi Yellow: Ce chevalier… il nous provoque, il nous déclare la guerre !",
                 "Chevalier: Hmph… vous êtes en retard, le dragon est déjà tombé. Ramassez vos affaires !"
             ],
             GameScene.TUTORIAL_CLEANING: [
