@@ -23,9 +23,9 @@ class SpawnPoint:
             return "player"
         elif "knight" in name_lower:
             return "knight"
-        elif "yellow" in name_lower:
+        elif "yellowspawner" in name_lower or "yellow_spawner" in name_lower or "yellow" in name_lower:
             return "yellow_spawner"
-        elif "red" in name_lower:
+        elif "redspawner" in name_lower or "red_spawner" in name_lower or "red" in name_lower:
             return "red_spawner"
         elif "archer" in name_lower:
             return "archer"

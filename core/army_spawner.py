@@ -26,7 +26,7 @@ class ArmySpawner:
         # Proximity-based activation settings
         self.screen_width = screen_width
         self.screen_height = screen_height
-        self.activation_distance = max(screen_width, screen_height) * 0.8  # 80% of screen size
+        self.activation_distance = 2000.0  # Increased from default to make spawners easier to trigger
         self.activated_spawners = set()  # Track which spawners have been activated
         
         # Separate spawners by team
@@ -78,17 +78,25 @@ class ArmySpawner:
         if camera_y is None:
             camera_y = player_y
             
+        print(f"DEBUG: Checking proximity for {len(self.red_spawners + self.yellow_spawners)} spawners")
+        print(f"DEBUG: Red spawners: {self.red_spawners}")
+        print(f"DEBUG: Yellow spawners: {self.yellow_spawners}")
+        print(f"DEBUG: Activation distance: {self.activation_distance}")
+        
         for i, (spawner_x, spawner_y) in enumerate(self.red_spawners + self.yellow_spawners):
             # Skip if this spawner was already activated
             spawner_id = f"{spawner_x}_{spawner_y}"
             if spawner_id in self.activated_spawners:
+                print(f"DEBUG: Spawner {i} at ({spawner_x}, {spawner_y}) already activated")
                 continue
                 
             # Calculate distance between player and spawner
             distance = ((player_x - spawner_x) ** 2 + (player_y - spawner_y) ** 2) ** 0.5
+            print(f"DEBUG: Spawner {i} at ({spawner_x}, {spawner_y}): distance = {distance:.1f}")
             
             # If player is close enough, activate this spawner once
             if distance <= self.activation_distance:
+                print(f"DEBUG: ACTIVATING spawner at ({spawner_x}, {spawner_y})!")
                 self.activated_spawners.add(spawner_id)
                 self._activate_spawner(spawner_x, spawner_y, camera_x, camera_y)
     
@@ -102,27 +110,35 @@ class ArmySpawner:
             camera_x: Camera's current x position
             camera_y: Camera's current y position
         """
+        print(f"DEBUG: _activate_spawner called for ({spawner_x}, {spawner_y})")
+        
         # Determine which team this spawner belongs to
         if (spawner_x, spawner_y) in self.red_spawners:
             team = "red"
             enemy_list = self.enemies[0]  # Red team
+            print(f"DEBUG: Activating RED spawner, enemy_list length: {len(enemy_list)}")
         else:
             team = "yellow"
             enemy_list = self.enemies[1]  # Yellow team
+            print(f"DEBUG: Activating YELLOW spawner, enemy_list length: {len(enemy_list)}")
             
         # Spawn 8-15 units at off-screen locations
         import random
         num_units = random.randint(8, 15)
+        print(f"DEBUG: Spawning {num_units} units for {team} team")
         
         # Calculate off-screen spawn positions
         spawn_positions = self._calculate_offscreen_positions(
             camera_x, camera_y, spawner_x, spawner_y, num_units
         )
+        print(f"DEBUG: Calculated {len(spawn_positions)} spawn positions")
         
-        for spawn_pos in spawn_positions:
+        for i, spawn_pos in enumerate(spawn_positions):
             # Randomly choose unit type with different probabilities
             unit_type = self._choose_random_unit_type()
+            print(f"DEBUG: Spawning unit {i+1}/{num_units}: {unit_type} at ({spawn_pos[0]:.1f}, {spawn_pos[1]:.1f})")
             self._spawn_unit_for_team(team, enemy_list, [spawn_pos], unit_type)
+            print(f"DEBUG: After spawning, enemy_list length: {len(enemy_list)}")
     
     def _calculate_offscreen_positions(self, camera_x, camera_y, spawner_x, spawner_y, num_units):
         """
