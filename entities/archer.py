@@ -10,6 +10,7 @@ from utils.animation import AnimationUtil
 
 
 class Archer(Enemy):
+    shoot_sound = arcade.load_sound(f"assets/sounds/arrow-swish.mp3")
     def __init__(self, x: float, y: float, direction: Direction = Direction.LEFT, projectiles: arcade.SpriteList = None, targets: arcade.SpriteList = None, image: str = "assets/images/Archer_Red.png", team: int = 0):
         super().__init__(x, y, direction, projectiles, targets)
         self.arrow_speed = random.uniform(4, 6)
@@ -19,8 +20,7 @@ class Archer(Enemy):
         self.image = image
         self.team = team  # 0 for left team (red), 1 for right team (yellow)
 
-        # Load the shooting sound
-        self.shoot_sound = arcade.load_sound("assets/sounds/arrow-swish.mp3")
+
 
         self.init_anim_frames()
 
@@ -154,7 +154,7 @@ class Archer(Enemy):
         if self.target is not None:
             # Play sound only if the archer is on screen
             if on_screen:
-                arcade.play_sound(self.shoot_sound)
+                arcade.play_sound(Archer.shoot_sound)
 
             # Calculate vector to target
             target_x, target_y = self.center_x - self.target.center_x, self.center_y - self.target.center_y

@@ -8,6 +8,7 @@ from utils.animation import AnimationUtil
 
 
 class Peon(Enemy):
+    attack_sounds = [arcade.load_sound(f"assets/sounds/swordS{i}.mp3") for i in range(1, 7)]
     def __init__(self, x: float, y: float, direction: Direction = Direction.LEFT, targets: arcade.SpriteList = None, image: str = "assets/images/Warrior_Red.png"):
         super().__init__(x, y, direction, None, targets)
         self.target_distance_limit = 500
@@ -16,8 +17,6 @@ class Peon(Enemy):
         self.scale = 0.5
         self.image = image
 
-        # Pre-load attack sounds
-        self.attack_sounds = [arcade.load_sound(f"assets/sounds/swordS{i}.mp3") for i in range(1, 7)]
 
         self.init_anim_frames()
 
@@ -101,7 +100,7 @@ class Peon(Enemy):
             frames = self.textures_dict[self.state][self.direction]
             if self.frame_index == 3 and self.state.startswith("attack") and on_screen:
                 # Play a random sword sound only if on screen
-                sound_to_play = random.choice(self.attack_sounds)
+                sound_to_play = random.choice(Peon.attack_sounds)
                 arcade.play_sound(sound_to_play)
             if self.frame_index >= len(frames):
                 self.frame_index = 0
@@ -149,9 +148,9 @@ class Peon(Enemy):
                 self.direction = Direction.LEFT
             self.state = "walk"
             if self.target.center_y < self.center_y:
-                self.center_y -= random.uniform(0.1, 0.2) if not no_side_movement else 1
+                self.center_y -= random.uniform(0.7, 1.6) if not no_side_movement else 1
             elif self.target.center_y > self.center_y:
-                self.center_y += random.uniform(0.1, 0.2) if not no_side_movement else 1
+                self.center_y += random.uniform(0.7, 1.6) if not no_side_movement else 1
             self.attack_timer = 0
         
         elif self.attack_timer >= self.attack_delay:
