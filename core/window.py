@@ -12,6 +12,9 @@ from core.game_phases import GamePhase, phase_length
 from core.scene_manager import SceneManager, GameScene
 from core.map_manager import MapManager
 from core.army_spawner import ArmySpawner
+from core.depth_manager import DepthManager
+from core.item_manager import ItemManager
+from entities.animated_coin import AnimatedCoin
 
 class GameWindow(arcade.Window):
     def __init__(self, width, height, title):
@@ -21,6 +24,8 @@ class GameWindow(arcade.Window):
         self.enemies = [arcade.SpriteList(), arcade.SpriteList()]
         self.projectiles = [arcade.SpriteList(), arcade.SpriteList()]
         self.solid_decorations = arcade.SpriteList()
+        self.dragons = arcade.SpriteList()  # Add dragon list
+        self.coins = arcade.SpriteList()  # Add coin list for collectible coins
         self.tile_map = None
         self.scene = None
         self.set_mouse_visible(True)
@@ -35,15 +40,25 @@ class GameWindow(arcade.Window):
         self.paused = False 
         self._bgm_sound = None
         self._bgm_player = None
+        self.retry_button = None
         
         # Map manager for handling map loading and spawning
         self.map_manager = MapManager(debug_mode=False)
         self.spawned_entities = {}
         
+        # Depth manager for perspective sorting
+        self.depth_manager = DepthManager()
+        
+        # Create animated coin for UI display
+        self.ui_coin = AnimatedCoin(scale=0.5)  # Small scale for UI
+        
         # Initialize army spawner (will be set up after map loading)
         self.army_spawner = None
         self.out_of_view_timer = 0.0
         self.max_out_of_view_time = 15.0
+        
+        # Initialize item manager for coin collection
+        self.item_manager = ItemManager()
 
         # Gestionnaire UI
         self.ui_manager = UIManager()
@@ -91,15 +106,27 @@ class GameWindow(arcade.Window):
 
         # 4) Spawn entities using the map manager
         self.spawned_entities = self.map_manager.spawn_entities(
-            self.player, self.knight, self.enemies
+            self.player, self.knight, self.enemies, self.dragons
         )
         
-        # 5) Initialize army spawner with spawner locations
+        # 5) Connect knight with dragons and dialogue manager for dragon dialogue
+        if len(self.knight) > 0:
+            knight_sprite = self.knight[0]
+            knight_sprite.dragons = self.dragons
+            knight_sprite.dialogue_manager = self.dialogue_manager
+        
+        # 6) Connect player with item manager for coin collection
+        if len(self.player) > 0:
+            player_sprite = self.player[0]
+            player_sprite.item_manager = self.item_manager
+        
+        # 7) Initialize army spawner with spawner locations
         spawner_locations = {name: entity for name, entity in self.spawned_entities.items() 
                            if hasattr(entity, 'spawn_type') and 'spawner' in entity.spawn_type}
+        
         self.army_spawner = ArmySpawner(
             spawner_locations, self.enemies, self.projectiles, self.knight, self.player,
-            screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT
+            screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT, depth_manager=self.depth_manager
         )
         test_goblin = Goblin(
             x=SCREEN_WIDTH // 2 + 100,
@@ -111,7 +138,16 @@ class GameWindow(arcade.Window):
         )
         self.enemies[0].append(test_goblin)
         
-        # 6) Create physics engine with the collision sprites
+        # 8) Add all sprites to depth manager for perspective sorting
+        self.depth_manager.clear()  # Clear any existing sprites
+        self.depth_manager.add_sprite_list(self.player)
+        self.depth_manager.add_sprite_list(self.knight)
+        self.depth_manager.add_sprite_list(self.dragons)
+        self.depth_manager.add_sprite_list(self.coins)  # Add coins to depth manager
+        for enemy_list in self.enemies:
+            self.depth_manager.add_sprite_list(enemy_list)
+        
+        # 9) Create physics engine with the collision sprites
         try:
             if len(self.player) > 0 and isinstance(self.solid_decorations, arcade.SpriteList):
                 self.physics_engine = arcade.PhysicsEngineSimple(self.player[0], self.solid_decorations)
@@ -140,12 +176,63 @@ class GameWindow(arcade.Window):
             if hasattr(self.map_manager, 'debug_mode') and self.map_manager.debug_mode:
                 self.solid_decorations.draw()
             
-            self.player.draw()
-            for p in self.player:
-                p.draw()
-            self.knight.draw()
-            for enemy_list in self.enemies:
-                enemy_list.draw()
+            # Draw all sprites with depth sorting for perspective
+            self.depth_manager.draw()
+            
+            # Draw coin displays from item manager
+            self.item_manager.draw_coin_displays()
+            
+            # Draw player UI (hearts and coin counter)
+            if len(self.player) > 0:
+                player = self.player[0]
+                # Draw hearts
+                spacing = 10   # space between hearts
+                offset_y = 10  # height above player
+                for i in range(player.current_health):
+                    arcade.draw_texture_rect(
+                        player.heart_texture,
+                        rect=arcade.LBWH(
+                            player.center_x - (player.current_health - 1) * spacing / 2 + i * spacing - 10,
+                            player.center_y + offset_y - 10,
+                            20, 20  # width, height of displayed heart
+                        ),
+                        angle=0,
+                        alpha=255
+                    )
+                
+                # Draw coin icon and counter above health (centered)
+                if player.item_manager:
+                    # Update animated coin position for UI - centered above hearts
+                    self.ui_coin.center_x = player.center_x
+                    self.ui_coin.center_y = player.center_y + offset_y + 25  # Above the hearts
+                    
+                    # Draw animated coin icon using arcade sprite draw
+                    if self.ui_coin.texture:
+                        coin_size = 16  # Fixed size for UI display
+                        arcade.draw_texture_rect(
+                            self.ui_coin.texture,
+                            rect=arcade.LBWH(
+                                self.ui_coin.center_x - coin_size/2,
+                                self.ui_coin.center_y - coin_size/2,
+                                coin_size,
+                                coin_size
+                            ),
+                            angle=0,
+                            alpha=255
+                        )
+                    
+                    # Draw coin count text next to the icon (centered above hearts)
+                    coin_text = f"{player.item_manager.coins}"
+                    arcade.draw_text(
+                        coin_text,
+                        player.center_x + 20,  # To the right of the centered coin icon
+                        player.center_y + offset_y + 20,  # Same level as the coin icon above hearts
+                        arcade.color.YELLOW,
+                        font_size=12,
+                        font_name="Arial"
+                    )
+            
+            # Draw projectiles separately (they should always be on top)
             for projectile_list in self.projectiles:
                 projectile_list.draw()
             
@@ -192,6 +279,10 @@ class GameWindow(arcade.Window):
                     )
             
             if self.player[0].current_health <= 0:
+                arcade.draw_lrbt_rectangle_filled(
+                    0, self.width, 0, self.height,
+                    (0, 0, 0, 150)  # noir semi-transparent (alpha 150)
+                )
                 arcade.draw_text(
                     "GAME OVER",
                     self.width // 2, self.height // 2,
@@ -200,10 +291,31 @@ class GameWindow(arcade.Window):
                     font_name="Cloister Black",
                     anchor_x="center", anchor_y="center"
                 )
+                self.show_retry_button()
+                self.ui_manager.draw()
+            else:
+                self.hide_retry_button()
             # Draw darkening effect and directional pointer when player is out of bounds
             if self.out_of_view_timer > 0 and len(self.player) > 0:
                 self.draw_out_of_bounds_effects()
 
+    def show_retry_button(self):
+        if self.retry_button is None:
+            layout = arcade.gui.UIBoxLayout()
+            retry_texture = arcade.load_texture("assets/images/button_play_yellow.png")
+            self.retry_button = arcade.gui.UITextureButton(texture=retry_texture, width=100, height=100)
+            self.retry_button.on_click = self.start_game
+            layout.add(self.retry_button)
+            layout.center_x = self.width // 2 - 45
+            layout.center_y = self.height // 2 - 150
+            self.ui_manager.add(layout)
+            self._retry_layout = layout  # Pour pouvoir le retirer
+
+    def hide_retry_button(self):
+        if self.retry_button is not None:
+            self.ui_manager.remove(self._retry_layout)
+            self.retry_button = None
+            self._retry_layout = None
 
     def draw_out_of_bounds_effects(self):
         """Draw darkening effect and directional pointer when player is out of bounds"""
@@ -333,6 +445,14 @@ class GameWindow(arcade.Window):
                     player.take_damage(1)
                 for projectile in hit_projectiles:
                     projectile.remove_from_sprite_lists()
+            
+            # Check player collision with coins and collect them
+            hit_coins = arcade.check_for_collision_with_list(player, self.coins)
+            for coin in hit_coins:
+                coin_value = coin.collect()  # Get the coin value and remove it
+                self.item_manager.add_coins(coin_value)
+                # Spawn a coin display effect at the coin's location
+                self.item_manager.spawn_coin_display(coin.center_x, coin.center_y, coin_value)
         
         # Check knight collision with projectiles from both teams and remove them
         if len(self.knight) > 0:
@@ -354,7 +474,7 @@ class GameWindow(arcade.Window):
                 # Left enemies (team 0) can only be hit by right team projectiles (team 1)
                 hit_projectiles = [p for p in arcade.check_for_collision_with_list(left_enemy, self.projectiles[1]) if getattr(p, 'team', None) == 1]
                 if hit_projectiles:
-                    left_enemy.die()
+                    left_enemy.die(self.item_manager)
                     for projectile in hit_projectiles:
                         projectile.remove_from_sprite_lists()
                     
@@ -364,7 +484,7 @@ class GameWindow(arcade.Window):
                 # Right enemies (team 1) can only be hit by left team projectiles (team 0)
                 hit_projectiles = [p for p in arcade.check_for_collision_with_list(right_enemy, self.projectiles[0]) if getattr(p, 'team', None) == 0]
                 if hit_projectiles:
-                    right_enemy.die()
+                    right_enemy.die(self.item_manager)
                     for projectile in hit_projectiles:
                         projectile.remove_from_sprite_lists()
 
@@ -382,24 +502,36 @@ class GameWindow(arcade.Window):
         if self.scene_manager:
             self.scene_manager.update(dt)
         
-        if self.phase == GamePhase.WAR_START:
-            # Use proximity-based army spawner activation with camera position
-            if self.army_spawner and len(self.player) > 0:
-                player_sprite = self.player[0]
-                # Pass camera position for off-screen spawning calculations
-                camera_x, camera_y = self.camera.position
-                self.army_spawner.check_proximity_and_activate(
-                    player_sprite.center_x, player_sprite.center_y,
-                    camera_x, camera_y
-                )
+        # Use proximity-based army spawner activation with camera position (no phase restriction)
+        if self.army_spawner and len(self.player) > 0:
+            player_sprite = self.player[0]
+            # Pass camera position for off-screen spawning calculations
+            camera_x, camera_y = self.camera.position
+            # print(f"DEBUG: Checking spawner proximity - Player: ({player_sprite.center_x:.1f}, {player_sprite.center_y:.1f})")
+            self.army_spawner.check_proximity_and_activate(
+                player_sprite.center_x, player_sprite.center_y,
+                camera_x, camera_y
+            )
 
+        
 
-
+        # Update item manager (for coin displays)
+        self.item_manager.update(dt)
+        
+        # Update animated UI coin
+        self.ui_coin.update(dt)
+        
+        # Update all sprites
         self.player.update(dt)
         self.knight.update(dt)
+        self.coins.update(dt)  # Update coins
+        self.dragons.update(dt)  # Update dragons
         self.dialogue_manager.update(dt)
         for enemy_list in self.enemies:
-            enemy_list.update(dt)
+            enemy_list.update(dt, 
+                camera_pos=self.camera.position,
+                screen_width=self.width,
+                screen_height=self.height)
         for projectile_list in self.projectiles:
             projectile_list.update(dt)
         self.check_collision()
@@ -433,6 +565,7 @@ class GameWindow(arcade.Window):
         )
 
     def start_game(self, event=None):
+        self.hide_retry_button()
         self.phase = GamePhase.REST
         self.phase_timer = 0
         # vider les listes pour éviter doublons
@@ -448,6 +581,8 @@ class GameWindow(arcade.Window):
         self.setup()
 
     def on_key_press(self, symbol, modifiers):
+        if len(self.player) > 0 and self.player[0].is_dead:
+            return
         
         if self.phase != GamePhase.MENU:
             # Toggle debug mode with F1
@@ -476,11 +611,17 @@ class GameWindow(arcade.Window):
             if symbol == arcade.key.ENTER:
                 self.dialogue_manager.advance()
 
+        
     def on_key_release(self, symbol, modifiers):
+        if len(self.player) > 0 and self.player[0].is_dead:
+            return
         if symbol in [arcade.key.UP, arcade.key.DOWN, arcade.key.LEFT, arcade.key.RIGHT,
                       arcade.key.SPACE, arcade.key.Z, arcade.key.Q, arcade.key.S, arcade.key.D]:
             self.player[0].on_key_release(symbol, modifiers)
             self.player.update()
+        
+            if len(self.player) > 0 and self.player[0].is_dead:
+                return
 
     def setup_menu(self):
         self.ui_manager.clear()

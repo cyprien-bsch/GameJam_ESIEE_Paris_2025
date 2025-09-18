@@ -16,10 +16,15 @@ class Player(arcade.Sprite):
         self.is_brooming = False
         self.direction = Direction.DOWN
 
+        self.brooming_sound = arcade.load_sound("assets/sounds/broom.mp3")
+
         # Brooming attributes
         self.brooming_enemy = None
         self.broom_timer = 0.0
         self.BROOM_TIME_TO_REMOVE = 1.0
+        
+        # Item manager reference (will be set by the game window)
+        self.item_manager = None
 
         # Health system
         self.max_health = 3
@@ -35,7 +40,8 @@ class Player(arcade.Sprite):
         """Handle player death"""
         self.is_dead = True
         self.current_health = 0
-        self.alpha = 128  # Make player semi-transparent when dead
+        self.alpha = 0  # Make player semi-transparent when dead
+        
 
     def init_anim_frames(self):
         # Taille d'une frame
@@ -87,6 +93,8 @@ class Player(arcade.Sprite):
         self.current_health = self.max_health
         self.invincible_timer = 0
         self.heart_texture = arcade.load_texture("assets/images/Heart.png")
+        self.grave_texture = arcade.load_texture("assets/images/tombe.png") 
+       
         
         # Hit feedback system
         self.hit_flash_timer = 0.0
@@ -106,6 +114,7 @@ class Player(arcade.Sprite):
 
 
     def update(self, delta_time = None):
+         
         dt = delta_time if delta_time else 1/60
         move_x = self.change_x * dt
 
@@ -135,6 +144,12 @@ class Player(arcade.Sprite):
             if arcade.check_for_collision(self, self.brooming_enemy):
                 self.broom_timer += dt
                 if self.broom_timer >= self.BROOM_TIME_TO_REMOVE:
+                    # Drop coins when brooming enemy
+                    if self.item_manager:
+                        coin_value = 1
+                        self.item_manager.add_coins(coin_value)
+                        self.item_manager.spawn_coin_display(self.brooming_enemy.center_x, self.brooming_enemy.center_y, coin_value)
+                    
                     self.brooming_enemy.remove_from_sprite_lists()
                     self.brooming_enemy = None # Stop brooming
                     self.is_brooming = False # End the action
@@ -198,19 +213,34 @@ class Player(arcade.Sprite):
     
 
     def draw(self):
-        # Apply color tinting manually since we're using a custom draw method
+        if self.is_dead:
+            # Le joueur est mort : afficher seulement la tombe
+            tomb_width = self.width * 0.6
+            tomb_height = self.height * 0.6
+            arcade.draw_texture_rect(
+                self.grave_texture,
+                rect=arcade.LBWH(
+                    self.center_x - tomb_width / 2,
+                    self.center_y - tomb_height / 2,
+                    tomb_width,
+                    tomb_height
+                ),
+                angle=0,
+                alpha=255
+            )
+            return  # ne rien dessiner d'autre
+
+        # Sinon, le joueur est vivant : dessiner le sprite du joueur et les coeurs
         current_alpha = self.alpha if hasattr(self, 'alpha') else 255
         current_color = getattr(self, 'color', (255, 255, 255, 255))
-        
-        # Ensure color is in RGBA format
+
         if len(current_color) == 3:
             current_color = (*current_color, current_alpha)
         elif len(current_color) == 4:
             current_color = (*current_color[:3], current_alpha)
-        
-        # Convert to arcade.Color object which has the .normalized attribute
+
         color_obj = Color(*current_color)
-        
+
         arcade.draw_texture_rect(
             self.texture,
             rect=arcade.LBWH(
@@ -223,21 +253,7 @@ class Player(arcade.Sprite):
             color=color_obj
         )
 
-        spacing = 10   # espace entre les coeurs
-        offset_y = 10  # hauteur au-dessus du joueur
-        for i in range(self.current_health):
-            arcade.draw_texture_rect(
-                self.heart_texture,
-                rect=arcade.LBWH(
-                    self.center_x - (self.current_health - 1) * spacing / 2 + i * spacing - 10,
-                    self.center_y + offset_y - 10,
-                    20, 20  # largeur, hauteur du coeur affiché
-                ),
-                angle=0,
-                alpha=255
-            )
-
-
+        # Note: Hearts and coin counter are now drawn in the main window's draw method
 
 
     # --- Vie ---
@@ -275,6 +291,7 @@ class Player(arcade.Sprite):
             self.frame_time = 0.1
             self.change_x = 0
             self.change_y = 0
+            arcade.play_sound(self.brooming_sound)
 
             # Check if we are starting to broom a dead enemy
             for enemy_list in self.enemy_lists:

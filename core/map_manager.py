@@ -5,6 +5,7 @@ from entities.player import Player
 from entities.knight import Knight
 from entities.archer import Archer
 from entities.peon import Peon
+from entities.dragon import DragonSpawn
 
 
 class SpawnPoint:
@@ -22,14 +23,16 @@ class SpawnPoint:
             return "player"
         elif "knight" in name_lower:
             return "knight"
-        elif "yellow" in name_lower:
+        elif "yellowspawner" in name_lower or "yellow_spawner" in name_lower or "yellow" in name_lower:
             return "yellow_spawner"
-        elif "red" in name_lower:
+        elif "redspawner" in name_lower or "red_spawner" in name_lower or "red" in name_lower:
             return "red_spawner"
         elif "archer" in name_lower:
             return "archer"
         elif "peon" in name_lower:
             return "peon"
+        elif "dragon" in name_lower:
+            return "dragon"
         else:
             return "unknown"
 
@@ -167,16 +170,22 @@ class MapManager:
                 print(f"Error parsing spawn object: {e}")
     
     def spawn_entities(self, player_list: arcade.SpriteList, knight_list: arcade.SpriteList, 
-                      enemies: List[arcade.SpriteList]) -> Dict[str, arcade.Sprite]:
+                      enemies: List[arcade.SpriteList], dragon_list: arcade.SpriteList = None) -> Dict[str, arcade.Sprite]:
         """Spawn entities at their designated spawn points."""
         spawned_entities = {}
+        
+        # Create dragon list if not provided
+        if dragon_list is None:
+            dragon_list = arcade.SpriteList()
         
         for name, spawn_point in self.spawn_points.items():
             try:
                 entity = None
                 
                 if spawn_point.spawn_type == "player":
-                    entity = Player(spawn_point.x, spawn_point.y, self.collision_sprites, enemies)
+                    # Include dragons in the enemy lists so player can broom them
+                    all_enemy_lists = enemies + ([dragon_list] if dragon_list else [])
+                    entity = Player(spawn_point.x, spawn_point.y, self.collision_sprites, all_enemy_lists)
                     entity.scale = 2
                     player_list.append(entity)
                     
@@ -184,6 +193,10 @@ class MapManager:
                     entity = Knight(spawn_point.x, spawn_point.y, self.collision_sprites, enemies)
                     entity.scale = 2
                     knight_list.append(entity)
+                    
+                elif spawn_point.spawn_type == "dragon":
+                    entity = DragonSpawn(spawn_point.x, spawn_point.y)
+                    dragon_list.append(entity)
                     
                 elif spawn_point.spawn_type in ["yellow_spawner", "red_spawner"]:
                     # These are spawner locations, not direct entity spawns
@@ -227,7 +240,7 @@ class MapManager:
             else:
                 sprite.alpha = 0
         
-        print(f"Debug mode: {'ON' if self.debug_mode else 'OFF'}")
+        # print(f"DEBUG mode: {'ON' if self.debug_mode else 'OFF'}")
     
     def draw_debug_info(self):
         """Draw debug information if debug mode is enabled."""
