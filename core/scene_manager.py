@@ -6,8 +6,8 @@ from utils.dialogue import Dialogue
 class GameScene(Enum):
     NONE = 0
     TUTORIAL_LESSON = 1      # Scène 1: La première leçon
-    TUTORIAL_CLEANING = 2    # Scène 2: Le grand nettoyage
-    DRAGON_BATTLE = 3        # Scène 3: La bataille du dragon
+    ENEMY_ARRIVAL = 2        # Scène 2: L'arrivée des ennemis
+    TUTORIAL_CLEANING = 3    # Scène 3: Le grand nettoyage
     NIGHT_SURVIVAL = 4       # Scène 4: L'épreuve de la nuit
     LORD_INCIDENT = 5        # Scène 5: L'incident du seigneur
     MONSTER_CAMP = 6         # Scène 6: Le campement des monstres
@@ -33,17 +33,17 @@ class SceneManager:
         # Initialiser les dialogues pour chaque scène
         scene_dialogues = {
             GameScene.TUTORIAL_LESSON: [
-                "Écuyer: Mon maître m'a dit d'être rapide... je n'ai rien vu, mais il a l'air d'avoir réussi.",
-                "Chevalier: Ah, te voilà enfin! Ramasse mon équipement et nettoie ce désordre!"
+                "Chevalier: Enfin! Tu arrives trop tard, le dragon est déjà vaincu. Ramasse tout ce désordre!",
+                "Écuyer: Mon maître... j'ai essayé d'arriver à temps, mais c'était déjà terminé..."
+            ],
+            GameScene.ENEMY_ARRIVAL: [
+                "Ennemi 1: Nous savons qui a tué notre dragon...",
+                "Ennemi 2: Oui, c'est ce chevalier arrogant!",
+                "Chevalier: Hmph, vous arrivez trop tard, jeunes imprudents!"
             ],
             GameScene.TUTORIAL_CLEANING: [
                 "Chevalier: Regarde-moi ce désordre déshonorant! Nettoie tout ça!",
-                "Écuyer: Toujours la même chose..."
-            ],
-            GameScene.DRAGON_BATTLE: [
-                "Chevalier: J'ai triomphé du grand dragon sacré! Quelle victoire glorieuse!",
-                "Écuyer: Ce n'était qu'un petit dragon de compagnie...",
-                "Écuyer: Et maintenant deux peuples sont en guerre à cause de ça."
+                "Écuyer: Toujours la même chose... je me demande si j'arriverai un jour à tout remettre en ordre."
             ],
             GameScene.NIGHT_SURVIVAL: [
                 "Chevalier: Je suis épuisé par ma victoire. Je vais me reposer ici.",
@@ -67,6 +67,7 @@ class SceneManager:
                 "Écuyer: Un jour, ce sera moi le héros... mais pas aujourd'hui."
             ]
         }
+
         
         # Ajouter les dialogues directement au dialogue_manager
         for scene, dialogues in scene_dialogues.items():
@@ -78,7 +79,6 @@ class SceneManager:
         return {
             GameScene.TUTORIAL_LESSON: "Ramassez les restes de l'ennemi vaincu pour récupérer de l'équipement.",
             GameScene.TUTORIAL_CLEANING: "Nettoyez la zone avec votre balai magique.",
-            GameScene.DRAGON_BATTLE: "Trouvez la gourde d'eau périmée pour éteindre le feu du pont.",
             GameScene.NIGHT_SURVIVAL: "Survivez pendant que le chevalier dort. Attention aux créatures!",
             GameScene.LORD_INCIDENT: "Récupérez le sceau royal sur le corps du seigneur sans vous faire repérer.",
             GameScene.MONSTER_CAMP: "Préparez le campement tout en évitant les monstres.",
