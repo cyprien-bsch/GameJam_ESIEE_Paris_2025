@@ -138,7 +138,7 @@ class SceneManager:
         knight_y = knight.center_y
         
         # Debug: afficher les valeurs pour comprendre le problème
-        # print(f"DEBUG: Knight Y: {knight_y}, Map height: {map_height}, Current scene: {self.current_scene}")
+        # # print(f"DEBUG: Knight Y: {knight_y}, Map height: {map_height}, Current scene: {self.current_scene}")
         
         # Diviser la carte en sections pour chaque scène
         # La carte fait 19200px de haut, on divise en 8 sections (une par scène)
@@ -191,7 +191,7 @@ class SceneManager:
             self.scene_progress = min(100, max(0, progress_in_section * 100))
         
         # Debug: afficher les calculs de progression
-        # print(f"DEBUG: Section start: {section_start}, Section end: {section_end}, Progress: {self.scene_progress}%")
+        # # print(f"DEBUG: Section start: {section_start}, Section end: {section_end}, Progress: {self.scene_progress}%")
         
         # Marquer la scène comme terminée si la progression atteint 100%
         # Note: Ne pas marquer ici car c'est fait dans _check_scene_triggers
@@ -214,7 +214,7 @@ class SceneManager:
         if scene_key in self.dialogue_manager.dialogues:
             self.dialogue_manager.start(scene_key)
         
-        # print(f"DEBUG: Started scene {scene} with progress reset to 0%")
+        # # print(f"DEBUG: Started scene {scene} with progress reset to 0%")
     
     
     def add_collected_item(self, item_name):
