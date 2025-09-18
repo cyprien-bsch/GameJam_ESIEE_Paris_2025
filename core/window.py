@@ -120,6 +120,8 @@ class GameWindow(arcade.Window):
             player_sprite.item_manager = self.item_manager
             # Set the player reference in the item manager for healing
             self.item_manager.player = player_sprite
+            # Set the scene manager reference for death handling
+            player_sprite.scene_manager = self.scene_manager
         
         # 7) Initialize army spawner with spawner locations
         spawner_locations = {name: entity for name, entity in self.spawned_entities.items() 
@@ -277,12 +279,26 @@ class GameWindow(arcade.Window):
                 )
                 arcade.draw_text(
                     "GAME OVER",
-                    self.width // 2, self.height // 2,
+                    self.width // 2, self.height // 2 + 40,
                     arcade.color.RED,
                     40,
                     font_name="Cloister Black",
                     anchor_x="center", anchor_y="center"
                 )
+                
+                # Afficher le score de hauteur
+                if self.scene_manager:
+                    height_score = self.scene_manager.get_final_height_score()
+                    score_text = f"Height Reached: {height_score}m"
+                    arcade.draw_text(
+                        score_text,
+                        self.width // 2, self.height // 2 - 20,
+                        arcade.color.WHITE,
+                        20,
+                        font_name="Arial",
+                        anchor_x="center", anchor_y="center"
+                    )
+                
                 self.show_retry_button()
                 self.ui_manager.draw()
             else:

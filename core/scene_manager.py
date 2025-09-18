@@ -25,6 +25,7 @@ class SceneManager:
         self.knight_positions = []  # Historique des positions du chevalier
         self.collected_items = set()  # Items collectés par le joueur
         self._previous_scene = GameScene.NONE  # Pour suivre les transitions
+        self.final_height_score = 0  # Store the height when player dies
         self._init_dialogues()
         
     def _init_dialogues(self):
@@ -221,15 +222,38 @@ class SceneManager:
         """Ajoute un item à la liste des objets collectés."""
         self.collected_items.add(item_name)
     
+    def get_height_score(self):
+        """Retourne la hauteur atteinte en mètres basée sur la position du chevalier."""
+        knight = self.window.knight[0] if len(self.window.knight) > 0 else None
+        if knight:
+            # Convertir la position Y en mètres (64 pixels = 1 mètre dans le jeu)
+            return int(knight.center_y / 64)
+        return 0
+    
+    def save_final_height_score(self):
+        """Save the current height as the final score when player dies."""
+        self.final_height_score = self.get_height_score()
+    
+    def get_final_height_score(self):
+        """Get the saved final height score for game over display."""
+        return self.final_height_score
+    
     def draw_objective(self, window_width, window_height):
         """Affiche l'objectif actuel à l'écran."""
         if self.current_scene != GameScene.NONE:
-            # Nouvelle position : en bas à droite
+            # Nouvelle position : en bas à gauche pour la hauteur
             margin = 20
-            progress = f"Progression: {int(self.scene_progress)}%"
-            # Calculer la largeur du texte pour l'aligner à droite
-            progress_obj = arcade.Text(progress, 0, 0, arcade.color.WHITE, 14)
-            progress_width = progress_obj.content_width
-            x_prog = window_width - progress_width - margin
-            y_prog = margin + 20
-            arcade.draw_text(progress, x_prog, y_prog, arcade.color.WHITE, 14)
+            
+            # Calculer la hauteur atteinte basée sur la position du chevalier
+            knight = self.window.knight[0] if len(self.window.knight) > 0 else None
+            if knight:
+                # Convertir la position Y en mètres (64 pixels = 1 mètre dans le jeu)
+                height_meters = int(knight.center_y / 64)
+                height_text = f"Height: {height_meters}m"
+            else:
+                height_text = "Height: 0m"
+            
+            # Afficher en bas à gauche
+            x_height = margin
+            y_height = margin + 20
+            arcade.draw_text(height_text, x_height, y_height, arcade.color.WHITE, 14)

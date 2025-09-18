@@ -25,6 +25,9 @@ class Player(arcade.Sprite):
         
         # Item manager reference (will be set by the game window)
         self.item_manager = None
+        
+        # Scene manager reference (set by game window)
+        self.scene_manager = None
 
         # Health system
         self.max_health = 3
@@ -40,7 +43,11 @@ class Player(arcade.Sprite):
         """Handle player death"""
         self.is_dead = True
         self.current_health = 0
-        self.alpha = 0  # Make player semi-transparent when dead
+        self.alpha = 128  # Make player semi-transparent
+        
+        # Save the final height score when the player dies
+        if self.scene_manager:
+            self.scene_manager.save_final_height_score()
         
 
     def init_anim_frames(self):
