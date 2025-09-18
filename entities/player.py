@@ -36,6 +36,7 @@ class Player(arcade.Sprite):
         self.is_dead = True
         self.current_health = 0
         self.alpha = 128  # Make player semi-transparent when dead
+        self.texture = self.grave_texture 
 
     def init_anim_frames(self):
         # Taille d'une frame
@@ -87,6 +88,8 @@ class Player(arcade.Sprite):
         self.current_health = self.max_health
         self.invincible_timer = 0
         self.heart_texture = arcade.load_texture("assets/images/Heart.png")
+        self.grave_texture = arcade.load_texture("assets/images/tombe.png") 
+       
         
         # Hit feedback system
         self.hit_flash_timer = 0.0
@@ -236,6 +239,22 @@ class Player(arcade.Sprite):
                 angle=0,
                 alpha=255
             )
+
+        if self.is_dead:
+            tomb_width = self.width * 0.6
+            tomb_height = self.height * 0.6
+            arcade.draw_texture_rect(
+                self.grave_texture,
+                rect=arcade.LBWH(
+                    self.center_x - self.width / 2,
+                    self.center_y - self.height / 2,
+                    tomb_width,
+                    tomb_height
+                ),
+                angle=0,
+                alpha=255
+            )
+            return
 
 
 

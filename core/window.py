@@ -485,11 +485,17 @@ class GameWindow(arcade.Window):
             if symbol == arcade.key.ENTER:
                 self.dialogue_manager.advance()
 
+            if self.is_dead:
+                return
+
     def on_key_release(self, symbol, modifiers):
         if symbol in [arcade.key.UP, arcade.key.DOWN, arcade.key.LEFT, arcade.key.RIGHT,
                       arcade.key.SPACE, arcade.key.Z, arcade.key.Q, arcade.key.S, arcade.key.D]:
             self.player[0].on_key_release(symbol, modifiers)
             self.player.update()
+        
+            if self.is_dead:
+                return
 
     def setup_menu(self):
         self.ui_manager.clear()
