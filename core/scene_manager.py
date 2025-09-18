@@ -23,7 +23,6 @@ class SceneManager:
         self.scene_completed = {scene: False for scene in GameScene}
         self.scene_triggers = {}  # Points de déclenchement pour chaque scène
         self.knight_positions = []  # Historique des positions du chevalier
-        self.scene_objectives = self._init_objectives()
         self.collected_items = set()  # Items collectés par le joueur
         self._previous_scene = GameScene.NONE  # Pour suivre les transitions
         self._init_dialogues()
@@ -37,9 +36,9 @@ class SceneManager:
                 "Écuyer: Mon maître... j'ai essayé d'arriver à temps, mais c'était déjà terminé..."
             ],
             GameScene.ENEMY_ARRIVAL: [
-                "Ennemi 1: Nous savons qui a tué notre dragon...",
-                "Ennemi 2: Oui, c'est ce chevalier arrogant!",
-                "Chevalier: Hmph, vous arrivez trop tard, jeunes imprudents!"
+                "Ennemi du Camp 1: Ce chevalier est de l'autre camp ! Il a tué notre dragon !",
+                "Ennemi du Camp 2: Ce chevalier… il nous provoque, il nous déclare la guerre !",
+                "Chevalier: Hmph… vous êtes en retard, le dragon est déjà tombé. Ramassez vos affaires !"
             ],
             GameScene.TUTORIAL_CLEANING: [
                 "Chevalier: Regarde-moi ce désordre déshonorant! Nettoie tout ça!",
@@ -73,18 +72,6 @@ class SceneManager:
         for scene, dialogues in scene_dialogues.items():
             scene_key = f"scene_{scene.name.lower()}"
             self.dialogue_manager.dialogues[scene_key] = dialogues
-    
-    def _init_objectives(self):
-        """Initialise les objectifs pour chaque scène."""
-        return {
-            GameScene.TUTORIAL_LESSON: "Ramassez les restes de l'ennemi vaincu pour récupérer de l'équipement.",
-            GameScene.TUTORIAL_CLEANING: "Nettoyez la zone avec votre balai magique.",
-            GameScene.NIGHT_SURVIVAL: "Survivez pendant que le chevalier dort. Attention aux créatures!",
-            GameScene.LORD_INCIDENT: "Récupérez le sceau royal sur le corps du seigneur sans vous faire repérer.",
-            GameScene.MONSTER_CAMP: "Préparez le campement tout en évitant les monstres.",
-            GameScene.FINAL_BATTLE: "Survivez au chaos de la bataille finale et influencez son issue.",
-            GameScene.CONCLUSION: "Écoutez le discours du chevalier et acceptez votre destin... pour l'instant."
-        }
     
     def update(self, delta_time):
         """Met à jour l'état de la scène actuelle."""
@@ -229,11 +216,6 @@ class SceneManager:
         
         # print(f"DEBUG: Started scene {scene} with progress reset to 0%")
     
-    def get_current_objective(self):
-        """Retourne l'objectif actuel de la scène."""
-        if self.current_scene in self.scene_objectives:
-            return self.scene_objectives[self.current_scene]
-        return ""
     
     def add_collected_item(self, item_name):
         """Ajoute un item à la liste des objets collectés."""
@@ -242,19 +224,12 @@ class SceneManager:
     def draw_objective(self, window_width, window_height):
         """Affiche l'objectif actuel à l'écran."""
         if self.current_scene != GameScene.NONE:
-            objective = self.get_current_objective()
             # Nouvelle position : en bas à droite
             margin = 20
-            text = f"Objectif: {objective}"
             progress = f"Progression: {int(self.scene_progress)}%"
             # Calculer la largeur du texte pour l'aligner à droite
-            text_obj = arcade.Text(text, 0, 0, arcade.color.WHITE, 14)
             progress_obj = arcade.Text(progress, 0, 0, arcade.color.WHITE, 14)
-            text_width = text_obj.content_width
             progress_width = progress_obj.content_width
-            x_obj = window_width - text_width - margin
             x_prog = window_width - progress_width - margin
-            y_obj = margin + 40
             y_prog = margin + 20
-            arcade.draw_text(text, x_obj, y_obj, arcade.color.WHITE, 14)
             arcade.draw_text(progress, x_prog, y_prog, arcade.color.WHITE, 14)
