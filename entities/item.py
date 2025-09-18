@@ -29,3 +29,24 @@ class Item(arcade.Sprite):
     def use(self):
         """Utilise l'item. À surcharger dans les sous-classes."""
         pass
+
+
+class Coin(Item):
+    """A coin item that can be collected by the player."""
+    
+    def __init__(self, x, y, value=1):
+        super().__init__(
+            x, y, 
+            "assets/images/MonedaD.png", 
+            "Coin", 
+            ItemType.CURRENCY, 
+            f"A valuable coin worth {value} gold.", 
+            value
+        )
+        self.scale = 0.4  # Make coins smaller
+        
+    def collect(self):
+        """Override collect to return the coin value."""
+        self.collected = True
+        self.remove_from_sprite_lists()
+        return self.value
