@@ -28,7 +28,7 @@ class ArmySpawner:
         self.screen_width = screen_width
         self.screen_height = screen_height
         self.activation_distance = 500.0  # Distance in pixels to activate spawners
-        self.activated_spawners = set()  # Track which spawners have been activated
+        self.activated_spawners = set()  # Track which spawners have been activated (single use)
         
         # Separate spawners by team
         self.red_spawners = []
@@ -63,7 +63,7 @@ class ArmySpawner:
         
         return targets
     
-    def check_proximity_and_activate(self, player_x, player_y, camera_x=None, camera_y=None):
+    def check_proximity_and_activate(self, player_x, player_y, camera_x=None, camera_y=None, delta_time=0.0):
         """Check if player is close enough to any spawner to activate it."""
         # Use camera position if provided, otherwise use player position
         check_x = camera_x if camera_x is not None else player_x
@@ -78,11 +78,6 @@ class ArmySpawner:
                 # print(f"ACTIVATED Red spawner at ({spawner_x:.1f}, {spawner_y:.1f})")
                 self._activate_spawner(spawner_x, spawner_y, check_x, check_y)
                 self.activated_spawners.add(spawner_key)
-                
-            # Check if spawner should be deactivated (player moved too far away)
-            elif distance > self.activation_distance and spawner_key in self.activated_spawners:
-                self.activated_spawners.remove(spawner_key)
-                # print(f"DEACTIVATED Red spawner at ({spawner_x:.1f}, {spawner_y:.1f})")
         
         # Check all yellow spawners
         for i, (spawner_x, spawner_y) in enumerate(self.yellow_spawners):
@@ -93,11 +88,6 @@ class ArmySpawner:
                 # print(f"ACTIVATED Yellow spawner at ({spawner_x:.1f}, {spawner_y:.1f})")
                 self._activate_spawner(spawner_x, spawner_y, check_x, check_y)
                 self.activated_spawners.add(spawner_key)
-                
-            # Check if spawner should be deactivated (player moved too far away)
-            elif distance > self.activation_distance and spawner_key in self.activated_spawners:
-                self.activated_spawners.remove(spawner_key)
-                # print(f"DEACTIVATED Yellow spawner at ({spawner_x:.1f}, {spawner_y:.1f})")
     
     def _activate_spawner(self, spawner_x, spawner_y, camera_x, camera_y):
         """
@@ -340,8 +330,8 @@ class ArmySpawner:
             traceback.print_exc()
     
     def get_spawner_count(self) -> Dict[str, int]:
-        """Get count of spawners by team for debugging."""
+        """Get the count of spawners by team."""
         return {
-            "red_spawners": len(self.red_spawners),
-            "yellow_spawners": len(self.yellow_spawners)
+            "red": len(self.red_spawners),
+            "yellow": len(self.yellow_spawners)
         }

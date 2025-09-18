@@ -501,7 +501,7 @@ class GameWindow(arcade.Window):
             camera_x, camera_y = self.camera.position
             self.army_spawner.check_proximity_and_activate(
                 player_sprite.center_x, player_sprite.center_y,
-                camera_x, camera_y
+                camera_x, camera_y, dt
             )
 
         
