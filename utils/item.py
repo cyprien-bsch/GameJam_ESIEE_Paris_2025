@@ -25,6 +25,3 @@ class Coin(Item):
             angle=self.angle,
             alpha=255
         )
-
-        spacing = 10
-        offset_y = 10

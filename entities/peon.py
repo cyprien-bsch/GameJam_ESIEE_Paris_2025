@@ -1,12 +1,13 @@
 from entities.enemy import Enemy, Direction
 from entities.projectiles import Projectile
+from utils.item import Item
 import math
 import arcade
 import random
 
 
 class Peon(Enemy):
-    def __init__(self, x: float, y: float, direction: Direction = Direction.LEFT, targets: arcade.SpriteList = None):
+    def __init__(self, x: float, y: float, direction: Direction = Direction.LEFT, items:Item = None, targets: arcade.SpriteList = None):
         super().__init__(x, y, direction, 1.0, targets)
         self.target_distance_limit = 500
         self.attack_timer = 0
