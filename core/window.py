@@ -1,17 +1,16 @@
 import arcade
 from arcade.gui import UIManager, UITextureButton
-import xml.etree.ElementTree as ET
 from entities.player import Player
 from entities.direction import Direction
 from entities.knight import Knight
 from utils.dialogue import Dialogue
-from entities.archer import Archer
-from entities.peon import Peon
 from entities.projectiles import Projectile
 from settings import SCREEN_WIDTH, SCREEN_HEIGHT
 import random
 from core.game_phases import GamePhase, phase_length
 from core.scene_manager import SceneManager, GameScene
+from core.map_manager import MapManager
+from core.army_spawner import ArmySpawner
 
 class GameWindow(arcade.Window):
     def __init__(self, width, height, title):
@@ -35,6 +34,13 @@ class GameWindow(arcade.Window):
         self.paused = False 
         self._bgm_sound = None
         self._bgm_player = None
+        
+        # Map manager for handling map loading and spawning
+        self.map_manager = MapManager(debug_mode=False)
+        self.spawned_entities = {}
+        
+        # Initialize army spawner (will be set up after map loading)
+        self.army_spawner = None
 
         # Gestionnaire UI
         self.ui_manager = UIManager()
@@ -66,66 +72,32 @@ class GameWindow(arcade.Window):
                 self.phase = GamePhase.REST
 
     def setup(self):
-        # 1) Load and render the Tiled map
-        try:
-            self.tile_map = arcade.load_tilemap("assets/map/Map.tmx", scaling=1.0)
-            self.scene = arcade.Scene.from_tilemap(self.tile_map)
-        except Exception as e:
-            print(f"Warning: failed to load tilemap: {e}")
+        # 1) Load and render the Tiled map using MapManager
+        self.tile_map, self.scene = self.map_manager.load_map()
+        
+        # 2) Parse map data (collisions and spawn points)
+        self.map_manager.parse_map_data()
+        
+        # 3) Get collision sprites from map manager
+        self.solid_decorations = self.map_manager.get_collision_sprites()
             
         # Initialiser le gestionnaire de scènes
         self.scene_manager = SceneManager(self, self.dialogue_manager)
 
-        # 2) Extract collision objects from the Tiled map (objects with class/type 'collision')
-        try:
-            tree = ET.parse("assets/map/Map.tmx")
-            root = tree.getroot()
-
-            self.map_height_tiles = int(root.attrib.get("height", "0"))
-            self.tile_height = int(root.attrib.get("tileheight", "0"))
-            self.total_map_height_px = self.map_height_tiles * self.tile_height
-
-            for obj_group in root.findall("objectgroup"):
-                layer_name = obj_group.attrib.get("name", "").lower()
-                is_collision_layer = layer_name in {"collision", "collisions", "obstacles"}
-
-                for obj in obj_group.findall("object"):
-                    obj_class = obj.attrib.get("class") or obj.attrib.get("type")
-                    is_collision_class = (obj_class or "").lower() == "collision"
-
-                    if not (is_collision_layer or is_collision_class):
-                        continue
-
-                    try:
-                        x = float(obj.attrib.get("x", 0))
-                        y = float(obj.attrib.get("y", 0))
-                        width = float(obj.attrib.get("width", 0))
-                        height = float(obj.attrib.get("height", 0))
-
-                        # Convert Tiled (top-left origin) to Arcade (bottom-left origin)
-                        center_x = x + width / 2.0
-                        center_y = self.total_map_height_px - (y + height / 2.0)
-
-                        collider = arcade.SpriteSolidColor(int(max(1, width)), int(max(1, height)), color=(0, 0, 0, 0))
-                        collider.center_x = center_x
-                        collider.center_y = center_y
-                        # Keep invisible for gameplay; comment out next line to visualize
-                        collider.alpha = 0
-                        self.solid_decorations.append(collider)
-                    except Exception as inner_e:
-                        print(f"Warning: failed to create collider from object: {inner_e}")
-        except Exception as e:
-            print(f"Warning: failed to parse collisions from TMX: {e}")
-
-        # 3) Create player and physics using the collision sprites
-        player_sprite = Player(800, 800, self.solid_decorations, self.enemies)
-        player_sprite.scale = 2
-        self.player.append(player_sprite)
-
-        knight_sprite = Knight(900, 800, self.solid_decorations, self.enemies)
-        knight_sprite.scale = 2
-        self.knight.append(knight_sprite)
+        # 4) Spawn entities using the map manager
+        self.spawned_entities = self.map_manager.spawn_entities(
+            self.player, self.knight, self.enemies
+        )
         
+        # 5) Initialize army spawner with spawner locations
+        spawner_locations = {name: entity for name, entity in self.spawned_entities.items() 
+                           if hasattr(entity, 'spawn_type') and 'spawner' in entity.spawn_type}
+        self.army_spawner = ArmySpawner(
+            spawner_locations, self.enemies, self.projectiles, self.knight, self.player,
+            screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT
+        )
+        
+        # 6) Create physics engine with the collision sprites
         try:
             if len(self.player) > 0 and isinstance(self.solid_decorations, arcade.SpriteList):
                 self.physics_engine = arcade.PhysicsEngineSimple(self.player[0], self.solid_decorations)
@@ -146,6 +118,11 @@ class GameWindow(arcade.Window):
         with self.camera.activate():
             if self.scene is not None:
                 self.scene.draw()
+            
+            # Dessiner les collisions si en mode debug
+            if hasattr(self.map_manager, 'debug_mode') and self.map_manager.debug_mode:
+                self.solid_decorations.draw()
+            
             self.player.draw()
             for p in self.player:
                 p.draw()
@@ -154,7 +131,9 @@ class GameWindow(arcade.Window):
                 enemy_list.draw()
             for projectile_list in self.projectiles:
                 projectile_list.draw()
-            self.solid_decorations.draw()
+            
+            # Dessiner les informations de debug du map manager
+            self.map_manager.draw_debug_info()
 
 
 
@@ -284,33 +263,15 @@ class GameWindow(arcade.Window):
             self.scene_manager.update(dt)
         
         if self.phase == GamePhase.WAR_START:
-            # Create combined target lists that include knight, player, and opposing enemies
-            red_team_targets = arcade.SpriteList()
-            yellow_team_targets = arcade.SpriteList()
-            
-            # Add knight and player as targets for both teams
-            if len(self.knight) > 0:
-                red_team_targets.append(self.knight[0])
-                yellow_team_targets.append(self.knight[0])
-            if len(self.player) > 0:
-                red_team_targets.append(self.player[0])
-                yellow_team_targets.append(self.player[0])
-            
-            # Add opposing team enemies as targets
-            for enemy in self.enemies[1]:  # Yellow enemies are targets for red team
-                red_team_targets.append(enemy)
-            for enemy in self.enemies[0]:  # Red enemies are targets for yellow team
-                yellow_team_targets.append(enemy)
-
-            if random.random() < 0.05:
-                self.enemies[0].append(Peon(1500, self.knight[0].center_y + 600 * random.random(), Direction.LEFT, red_team_targets, image="assets/images/Warrior_Red.png"))
-            if random.random() < 0.05:
-                self.enemies[1].append(Peon(300, self.knight[0].center_y + 600 * random.random(), Direction.RIGHT, yellow_team_targets, image="assets/images/Warrior_Yellow.png"))
-
-            if random.random() < 0.05:
-                self.enemies[0].append(Archer(1500, self.knight[0].center_y + 600 * random.random(), Direction.LEFT, self.projectiles[0], red_team_targets, image="assets/images/Archer_Red.png", team=0))
-            if random.random() < 0.05:
-                self.enemies[1].append(Archer(300, self.knight[0].center_y + 600 * random.random(), Direction.RIGHT, self.projectiles[1], yellow_team_targets, image="assets/images/Archer_Yellow.png", team=1))
+            # Use proximity-based army spawner activation with camera position
+            if self.army_spawner and len(self.player) > 0:
+                player_sprite = self.player[0]
+                # Pass camera position for off-screen spawning calculations
+                camera_x, camera_y = self.camera.position
+                self.army_spawner.check_proximity_and_activate(
+                    player_sprite.center_x, player_sprite.center_y,
+                    camera_x, camera_y
+                )
 
 
 
@@ -343,6 +304,19 @@ class GameWindow(arcade.Window):
     def on_key_press(self, symbol, modifiers):
         
         if self.phase != GamePhase.MENU:
+            # Toggle debug mode with F1
+            if symbol == arcade.key.F1:
+                self.map_manager.toggle_debug_mode()
+                return
+                
+            # Print debug info with F2
+            if symbol == arcade.key.F2:
+                self.map_manager.print_debug_info()
+                if self.army_spawner:
+                    spawner_counts = self.army_spawner.get_spawner_count()
+                    print(f"Army spawners: {spawner_counts}")
+                return
+                
             if symbol == arcade.key.ESCAPE:
                 self.paused = not self.paused
                 return
