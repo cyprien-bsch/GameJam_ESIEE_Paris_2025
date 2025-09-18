@@ -240,7 +240,7 @@ class MapManager:
             else:
                 sprite.alpha = 0
         
-        print(f"Debug mode: {'ON' if self.debug_mode else 'OFF'}")
+        # print(f"DEBUG mode: {'ON' if self.debug_mode else 'OFF'}")
     
     def draw_debug_info(self):
         """Draw debug information if debug mode is enabled."""

@@ -497,7 +497,7 @@ class GameWindow(arcade.Window):
             player_sprite = self.player[0]
             # Pass camera position for off-screen spawning calculations
             camera_x, camera_y = self.camera.position
-            print(f"DEBUG: Checking spawner proximity - Player: ({player_sprite.center_x:.1f}, {player_sprite.center_y:.1f})")
+            # print(f"DEBUG: Checking spawner proximity - Player: ({player_sprite.center_x:.1f}, {player_sprite.center_y:.1f})")
             self.army_spawner.check_proximity_and_activate(
                 player_sprite.center_x, player_sprite.center_y,
                 camera_x, camera_y
