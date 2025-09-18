@@ -13,11 +13,14 @@ class Archer(Enemy):
     def __init__(self, x: float, y: float, direction: Direction = Direction.LEFT, projectiles: arcade.SpriteList = None, targets: arcade.SpriteList = None, image: str = "assets/images/Archer_Red.png", team: int = 0):
         super().__init__(x, y, direction, projectiles, targets)
         self.arrow_speed = random.uniform(4, 6)
-        self.shoot_delay = 30
+        self.shoot_delay = 72
         self.shoot_timer = 0
         self.scale = 0.5
         self.image = image
         self.team = team  # 0 for left team (red), 1 for right team (yellow)
+
+        # Load the shooting sound
+        self.shoot_sound = arcade.load_sound("assets/sounds/arrow-swish.mp3")
 
         self.init_anim_frames()
 
@@ -64,7 +67,7 @@ class Archer(Enemy):
         # État initial
         self.state = "idle"
         self.frame_index = 0
-        self.frame_time = 0.1
+        self.frame_time = 0.2
         self.texture = self.textures_dict[self.state][self.direction][0]
 
     def die(self):
@@ -72,10 +75,24 @@ class Archer(Enemy):
         self.state = "idle"
         self.frame_index = 0
 
+    def is_on_screen(self, camera_pos, screen_width, screen_height):
+        """Check if the archer is visible on screen."""
+        left_boundary = camera_pos[0] - screen_width / 2
+        right_boundary = camera_pos[0] + screen_width / 2
+        top_boundary = camera_pos[1] + screen_height / 2
+        bottom_boundary = camera_pos[1] - screen_height / 2
+
+        return (
+            self.right > left_boundary and
+            self.left < right_boundary and
+            self.top > bottom_boundary and
+            self.bottom < top_boundary
+        )
+
     def update_animation(self, delta_time: float = 1/60):
         self.frame_time -= delta_time
         if self.frame_time <= 0:
-            self.frame_time = 0.1
+            self.frame_time = 0.2 if self.state == "shoot" else 0.1
             self.frame_index += 1
             frames = self.textures_dict[self.state][self.direction]
             self.frame_index %= len(frames)
@@ -83,23 +100,29 @@ class Archer(Enemy):
 
 
 
-    def update(self, delta_time = None):
+    def update(self, delta_time = None, camera_pos=None, screen_width=None, screen_height=None):
         if self.is_dead:
             return
+        
+        on_screen = False
+        if camera_pos and screen_width and screen_height:
+            on_screen = self.is_on_screen(camera_pos, screen_width, screen_height)
+
+        
+
         self.target = self.nearest_target()
 
         if self.target is None:
             self.state = "walk"
-            self.update_animation(delta_time)
             if self.direction == Direction.RIGHT:
                 self.center_x += 1
             elif self.direction == Direction.LEFT:
                 self.center_x -= 1
+            self.update_animation(delta_time)
             return
 
         if self.target is not None and self.distance(self.target) > 300:
             self.state = "walk"
-            self.update_animation(delta_time)
             if self.target.center_x > self.center_x:
                 self.direction = Direction.RIGHT
                 self.center_x += 1
@@ -111,22 +134,32 @@ class Archer(Enemy):
                 self.center_y -= 1
             else:
                 self.center_y += 1
+            self.update_animation(delta_time)
             return
 
         if self.target is not None and self.distance(self.target) <= 300:
             self.state = "shoot"
-            self.update_animation(delta_time)
+            self.direction = Direction.LEFT if self.target.center_x < self.center_x else Direction.RIGHT
             self.shoot_timer += 1
 
         if self.target is not None and self.shoot_timer >= self.shoot_delay:
-            self.shoot_arrow()
+            self.shoot_arrow(on_screen=on_screen)
             self.shoot_timer = 0
 
+        
+        self.update_animation(delta_time)
 
-    def shoot_arrow(self):
+
+    def shoot_arrow(self, on_screen: bool = False):
         if self.target is not None:
+            # Play sound only if the archer is on screen
+            if on_screen:
+                arcade.play_sound(self.shoot_sound)
+
             # Calculate vector to target
             target_x, target_y = self.center_x - self.target.center_x, self.center_y - self.target.center_y
+
+            self.direction = Direction.LEFT if target_x > 0 else Direction.RIGHT
 
             # Calculate the distance to the target
             distance = math.sqrt(target_x**2 + target_y**2)

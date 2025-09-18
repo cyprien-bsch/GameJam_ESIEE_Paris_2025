@@ -383,13 +383,16 @@ class GameWindow(arcade.Window):
                     camera_x, camera_y
                 )
 
-
+        
 
         self.player.update(dt)
         self.knight.update(dt)
         self.dialogue_manager.update(dt)
         for enemy_list in self.enemies:
-            enemy_list.update(dt)
+            enemy_list.update(dt, 
+                camera_pos=self.camera.position,
+                screen_width=self.width,
+                screen_height=self.height)
         for projectile_list in self.projectiles:
             projectile_list.update(dt)
         self.check_collision()
