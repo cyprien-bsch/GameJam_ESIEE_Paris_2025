@@ -11,12 +11,13 @@ class ArmySpawner:
     
     def __init__(self, spawner_locations: Dict[str, any], enemies: List[arcade.SpriteList], 
                  projectiles: List[arcade.SpriteList], knight: arcade.SpriteList, player: arcade.SpriteList, 
-                 screen_width=600, screen_height=600):
+                 screen_width=600, screen_height=600, depth_manager=None):
         self.spawner_locations = spawner_locations
         self.enemies = enemies  # [red_team, yellow_team]
         self.projectiles = projectiles  # [red_projectiles, yellow_projectiles]
         self.knight = knight
         self.player = player
+        self.depth_manager = depth_manager  # For perspective sorting
         
         # Spawning configuration
         self.spawn_rate = 0.02  # 2% chance per frame during war phase
@@ -255,6 +256,10 @@ class ArmySpawner:
         
         # Add to appropriate enemy list
         enemy_list.append(unit)
+        
+        # Add to depth manager for perspective sorting
+        if self.depth_manager:
+            self.depth_manager.add_sprite(unit)
     
     def get_spawner_count(self) -> Dict[str, int]:
         """Get count of spawners by team for debugging."""
