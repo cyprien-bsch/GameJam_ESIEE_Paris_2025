@@ -34,6 +34,7 @@ class GameWindow(arcade.Window):
         self.paused = False 
         self._bgm_sound = None
         self._bgm_player = None
+        self.retry_button = None
         
         # Map manager for handling map loading and spawning
         self.map_manager = MapManager(debug_mode=False)
@@ -190,10 +191,31 @@ class GameWindow(arcade.Window):
                     font_name="Cloister Black",
                     anchor_x="center", anchor_y="center"
                 )
+                self.show_retry_button()
+                self.ui_manager.draw()
+            else:
+                self.hide_retry_button()
             # Draw darkening effect and directional pointer when player is out of bounds
             if self.out_of_view_timer > 0 and len(self.player) > 0:
                 self.draw_out_of_bounds_effects()
 
+    def show_retry_button(self):
+        if self.retry_button is None:
+            layout = arcade.gui.UIBoxLayout()
+            retry_texture = arcade.load_texture("assets/images/button_play_yellow.png")
+            self.retry_button = arcade.gui.UITextureButton(texture=retry_texture, width=100, height=100)
+            self.retry_button.on_click = self.start_game
+            layout.add(self.retry_button)
+            layout.center_x = self.width // 2 - 45
+            layout.center_y = self.height // 2 + 60
+            self.ui_manager.add(layout)
+            self._retry_layout = layout  # Pour pouvoir le retirer
+
+    def hide_retry_button(self):
+        if self.retry_button is not None:
+            self.ui_manager.remove(self._retry_layout)
+            self.retry_button = None
+            self._retry_layout = None
 
     def draw_out_of_bounds_effects(self):
         """Draw darkening effect and directional pointer when player is out of bounds"""
@@ -419,6 +441,7 @@ class GameWindow(arcade.Window):
             self.out_of_view_timer = 0
 
     def start_game(self, event=None):
+        self.hide_retry_button()
         self.phase = GamePhase.REST
         self.phase_timer = 0
         # vider les listes pour éviter doublons
