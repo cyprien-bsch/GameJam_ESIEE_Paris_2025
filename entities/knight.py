@@ -30,15 +30,76 @@ class Knight(BaseCharacter):
         self.attack_timer = 0.0
         self.ATTACK_COOLDOWN = 0.4  # secondes
         self.init_anim_frames()
-        self.current_health = 5
-        self.max_health = 5
+        self.current_health = 20
+        self.max_health = 20
         self.is_dead = False
+        
+        # Deactivation system
+        self.is_deactivated = False
+        self.deactivation_timer = 0.0
+        self.DEACTIVATION_DURATION = 2.0  # 2 seconds
+        self.DEACTIVATION_THRESHOLD = 0  # Deactivate when health drops to 0
+        self.original_color = (255, 255, 255)  # Store original color
+        self.deactivated_color = (255, 255, 0)  # Yellow color when deactivated
+        
+        # Hit feedback and invincibility system (similar to player)
+        self.invincible_timer = 0.0
+        self.hit_flash_timer = 0.0
+        self.hit_flash_duration = 0.15  # Flash red for 0.15 seconds
+        self.blink_timer = 0.0
+        self.blink_interval = 0.1  # Blink every 0.1 seconds during invincibility
+
+    def take_damage(self, amount=1):
+        """Handle taking damage and check for deactivation"""
+        if self.is_dead or self.is_deactivated or self.invincible_timer > 0:
+            return
+        
+        self.current_health = max(0, self.current_health - amount)
+        
+        # Trigger hit feedback effects (similar to player)
+        self.hit_flash_timer = self.hit_flash_duration
+        self.color = (255, 100, 100)  # Flash red
+        self.blink_timer = 0.0  # Reset blink timer
+        
+        # Trigger hit feedback effects if inherited from BaseCharacter
+        if hasattr(super(), 'take_damage'):
+            super().take_damage(amount)
+        
+        # Check if knight should be deactivated
+        if self.current_health <= self.DEACTIVATION_THRESHOLD and not self.is_deactivated:
+            self.deactivate()
+        
+        # Check if knight should die
+        if self.current_health <= 0:
+            self.die()
+
+    def deactivate(self):
+        """Deactivate the knight temporarily"""
+        self.is_deactivated = True
+        self.deactivation_timer = self.DEACTIVATION_DURATION
+        self.color = self.deactivated_color
+        self.mood = "idle"  # Stop attacking when deactivated
+
+    def reactivate(self):
+        """Reactivate the knight"""
+        self.is_deactivated = False
+        self.deactivation_timer = 0.0
+        self.color = self.original_color
+        # Restore health to at least 1 HP when reactivating
+        self.current_health = max(1, self.max_health)
+        # Reset death state
+        self.is_dead = False
+        self.alpha = 255  # Restore full opacity
+        # Grant invincibility after reactivation (like player after being hit)
+        self.invincible_timer = 1.0  # 1 second of invincibility
+        self.blink_timer = 0.0  # Reset blink timer
 
     def die(self):
         """Handle knight death"""
         self.is_dead = True
         self.current_health = 0
-        self.alpha = 128  # Make knight semi-transparent when dead
+        # Keep yellow color when dead (don't change color here)
+        # Keep normal alpha (don't make semi-transparent)
 
 
     def init_anim_frames(self):
@@ -154,6 +215,46 @@ class Knight(BaseCharacter):
             self._move(Direction.LEFT if dx == 0 else Direction.RIGHT, delta_time)
 
     def update(self, delta_time: float = 1/60):
+        # Update hit feedback effects (similar to player)
+        if self.hit_flash_timer > 0:
+            self.hit_flash_timer = max(0.0, self.hit_flash_timer - delta_time)
+            if self.hit_flash_timer <= 0:
+                # Reset to appropriate color when flash ends
+                if self.is_deactivated:
+                    self.color = self.deactivated_color  # Stay yellow if deactivated
+                else:
+                    self.color = self.original_color  # Return to white if active
+        
+        # Update blinking effect during invincibility (after flash ends)
+        if self.invincible_timer > 0 and self.hit_flash_timer <= 0:
+            self.blink_timer += delta_time
+            if self.blink_timer >= self.blink_interval:
+                self.blink_timer = 0.0
+                # Toggle alpha between 100 and 255 for blinking effect
+                self.alpha = 100 if self.alpha == 255 else 255
+        elif self.invincible_timer <= 0:
+            # Ensure full opacity when not invincible
+            self.alpha = 255
+        
+        # Update invincibility timer
+        if self.invincible_timer > 0:
+            self.invincible_timer -= delta_time
+        
+        # Handle deactivation timer
+        if self.is_deactivated:
+            self.deactivation_timer -= delta_time
+            if self.deactivation_timer <= 0:
+                self.reactivate()
+            return  # Don't do anything else while deactivated
+        
+        # Don't update if dead
+        if self.is_dead:
+            self.state = "idle"
+            self.update_animation(delta_time)
+            self.current_step = 0
+            self.steps_moved = 0
+            return
+
         if self.current_step >= len(self.path):
             self.state = "idle"
             self.update_animation(delta_time)
@@ -214,9 +315,6 @@ class Knight(BaseCharacter):
             if self.steps_moved >= steps_target:
                 self.current_step += 1
                 self.steps_moved = 0
-
-            self.max_health = 5
-            self.current_health = self.max_health
 
             if random.random() < 0.005:  # 0.5% de chance par frame de changer d'état
                 self.mood = "attack"
