@@ -131,7 +131,7 @@ class GameWindow(arcade.Window):
             if hasattr(self.map_manager, 'debug_mode') and self.map_manager.debug_mode:
                 self.solid_decorations.draw()
             
-            self.player.draw()
+            #self.player.draw()
             for p in self.player:
                 p.draw()
             self.knight.draw()
@@ -406,7 +406,7 @@ class GameWindow(arcade.Window):
                 )
 
 
-
+        
         self.player.update(dt)
         self.knight.update(dt)
         self.dialogue_manager.update(dt)
@@ -485,7 +485,7 @@ class GameWindow(arcade.Window):
             if symbol == arcade.key.ENTER:
                 self.dialogue_manager.advance()
 
-            if self.is_dead:
+            if len(self.player) > 0 and self.player[0].is_dead:
                 return
 
     def on_key_release(self, symbol, modifiers):
@@ -494,7 +494,7 @@ class GameWindow(arcade.Window):
             self.player[0].on_key_release(symbol, modifiers)
             self.player.update()
         
-            if self.is_dead:
+            if len(self.player) > 0 and self.player[0].is_dead:
                 return
 
     def setup_menu(self):
