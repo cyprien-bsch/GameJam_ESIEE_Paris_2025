@@ -190,16 +190,109 @@ class GameWindow(arcade.Window):
                     font_name="Cloister Black",
                     anchor_x="center", anchor_y="center"
                 )
-            if self.out_of_view_timer > 0:
-                arcade.draw_text(
-                    "Trop loin du maître... -1 cœur / 5s",
-                    self.width // 2, self.height - 200,
-                    (255, 215, 0, 255),  
-                    18,
-                    font_name="Cloister Black",
-                    anchor_x="center"
-                )
+            # Draw darkening effect and directional pointer when player is out of bounds
+            if self.out_of_view_timer > 0 and len(self.player) > 0:
+                self.draw_out_of_bounds_effects()
 
+
+    def draw_out_of_bounds_effects(self):
+        """Draw darkening effect and directional pointer when player is out of bounds"""
+        player = self.player[0]
+        
+        # Calculate view boundaries
+        view_left = self.camera.position[0] - self.width // 2
+        view_right = self.camera.position[0] + self.width // 2
+        view_bottom = self.camera.position[1] - self.height // 2
+        view_top = self.camera.position[1] + self.height // 2
+        
+        # Calculate distance from screen bounds
+        distance_x = 0
+        distance_y = 0
+        
+        if player.center_x < view_left:
+            distance_x = view_left - player.center_x
+        elif player.center_x > view_right:
+            distance_x = player.center_x - view_right
+            
+        if player.center_y < view_bottom:
+            distance_y = view_bottom - player.center_y
+        elif player.center_y > view_top:
+            distance_y = player.center_y - view_top
+        
+        # Calculate total distance from screen
+        total_distance = (distance_x ** 2 + distance_y ** 2) ** 0.5
+        
+        # Calculate darkening intensity based on distance (max 200 alpha for very dark)
+        max_distance = 500  # Distance at which maximum darkening occurs
+        darkening_alpha = min(200, int((total_distance / max_distance) * 200))
+        
+        # Draw darkening overlay
+        arcade.draw_lrbt_rectangle_filled(
+            0, self.width, 0, self.height,
+            (0, 0, 0, darkening_alpha)
+        )
+        
+        # Calculate pointer position and direction
+        pointer_x = self.width // 2
+        pointer_y = self.height // 2
+        
+        # Determine direction to player
+        if player.center_x < view_left:
+            pointer_x = 50
+        elif player.center_x > view_right:
+            pointer_x = self.width - 50
+            
+        if player.center_y < view_bottom:
+            pointer_y = 50
+        elif player.center_y > view_top:
+            pointer_y = self.height - 50
+        
+        # Draw directional pointer (arrow pointing towards player)
+        arrow_size = 20
+        arrow_color = (255, 215, 0, 255)  # Golden yellow
+        
+        # Calculate angle to player
+        import math
+        angle = math.atan2(player.center_y - (self.camera.position[1]), 
+                          player.center_x - (self.camera.position[0]))
+        
+        # Draw arrow pointing towards player
+        self.draw_arrow(pointer_x, pointer_y, angle, arrow_size, arrow_color)
+        
+        # Draw warning text
+        arcade.draw_text(
+            "Trop loin du maître... -1 cœur / 5s",
+            self.width // 2, self.height - 50,
+            (255, 215, 0, 255),  
+            16,
+            font_name="Cloister Black",
+            anchor_x="center"
+        )
+
+    def draw_arrow(self, x, y, angle, size, color):
+        """Draw an arrow pointing in the specified direction"""
+        import math
+        
+        # Arrow tip
+        tip_x = x + math.cos(angle) * size
+        tip_y = y + math.sin(angle) * size
+        
+        # Arrow base points
+        base_angle1 = angle + math.pi * 0.75
+        base_angle2 = angle - math.pi * 0.75
+        base_size = size * 0.6
+        
+        base1_x = x + math.cos(base_angle1) * base_size
+        base1_y = y + math.sin(base_angle1) * base_size
+        base2_x = x + math.cos(base_angle2) * base_size
+        base2_y = y + math.sin(base_angle2) * base_size
+        
+        # Draw arrow as triangle
+        arcade.draw_triangle_filled(
+            tip_x, tip_y,
+            base1_x, base1_y,
+            base2_x, base2_y,
+            color)
 
     def is_in_collidable_objects(self, sprite: arcade.Sprite) -> bool:
         return arcade.check_for_collision_with_list(sprite, self.solid_decorations) or \
