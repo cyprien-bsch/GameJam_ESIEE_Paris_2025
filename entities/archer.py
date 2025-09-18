@@ -1,4 +1,5 @@
-from entities.enemy import Enemy, Direction
+from entities.enemy import Enemy
+from entities.direction import Direction
 from entities.projectiles import Projectile
 import math
 import arcade
@@ -9,13 +10,14 @@ from utils.animation import AnimationUtil
 
 
 class Archer(Enemy):
-    def __init__(self, x: float, y: float, direction: Direction = Direction.LEFT, projectiles: arcade.SpriteList = None, targets: arcade.SpriteList = None, image: str = "assets/images/Archer_Red.png"):
+    def __init__(self, x: float, y: float, direction: Direction = Direction.LEFT, projectiles: arcade.SpriteList = None, targets: arcade.SpriteList = None, image: str = "assets/images/Archer_Red.png", team: int = 0):
         super().__init__(x, y, direction, projectiles, targets)
         self.arrow_speed = random.uniform(4, 6)
         self.shoot_delay = 30
         self.shoot_timer = 0
         self.scale = 0.5
         self.image = image
+        self.team = team  # 0 for left team (red), 1 for right team (yellow)
 
         self.init_anim_frames()
 
@@ -42,20 +44,20 @@ class Archer(Enemy):
             "idle": {
                 Direction.RIGHT: right_facing_textures["idle"],
                 Direction.LEFT: left_facing_textures["idle"],
-                Direction.TOP: right_facing_textures["idle"],
-                Direction.BOTTOM: left_facing_textures["idle"],
+                Direction.UP: right_facing_textures["idle"],
+                Direction.DOWN: left_facing_textures["idle"],
             },
             "walk": {
                 Direction.RIGHT: right_facing_textures["walk"],
                 Direction.LEFT: left_facing_textures["walk"],
-                Direction.TOP: right_facing_textures["walk"],
-                Direction.BOTTOM: left_facing_textures["walk"],
+                Direction.UP: right_facing_textures["walk"],
+                Direction.DOWN: left_facing_textures["walk"],
             },
             "shoot": {
                 Direction.RIGHT: right_facing_textures["shoot"],
                 Direction.LEFT: left_facing_textures["shoot"],
-                Direction.TOP: right_facing_textures["shoot"],
-                Direction.BOTTOM: left_facing_textures["shoot"],
+                Direction.UP: right_facing_textures["shoot"],
+                Direction.DOWN: left_facing_textures["shoot"],
             }
         }
 
@@ -95,17 +97,17 @@ class Archer(Enemy):
                 self.center_x -= 1
             return
 
-        if self.target is not None and math.sqrt(self.target[0]**2 + self.target[1]**2) > 300:
+        if self.target is not None and self.distance(self.target) > 300:
             self.state = "walk"
             self.update_animation(delta_time)
-            self.center_x += 1 if self.target[0] < 0 else -1
-            if self.target[1] > 0:
+            self.center_x += 1 if self.target.center_x > self.center_x else -1
+            if self.target.center_y < self.center_y:
                 self.center_y -= 1
             else:
                 self.center_y += 1
             return
 
-        if self.target is not None and math.sqrt(self.target[0]**2 + self.target[1]**2) <= 300:
+        if self.target is not None and self.distance(self.target) <= 300:
             self.state = "shoot"
             self.update_animation(delta_time)
             self.shoot_timer += 1
@@ -118,7 +120,7 @@ class Archer(Enemy):
     def shoot_arrow(self):
         if self.target is not None:
             # Calculate vector to target
-            target_x, target_y = self.target
+            target_x, target_y = self.center_x - self.target.center_x, self.center_y - self.target.center_y
 
             # Calculate the distance to the target
             distance = math.sqrt(target_x**2 + target_y**2)
@@ -128,5 +130,5 @@ class Archer(Enemy):
                 dx = -target_x * (self.arrow_speed / distance)
                 dy = -target_y * (self.arrow_speed / distance)
 
-                arrow = Projectile(self.center_x, self.center_y, dx, dy)
+                arrow = Projectile(self.center_x, self.center_y, dx, dy, team=self.team)
                 self.projectiles.append(arrow)
