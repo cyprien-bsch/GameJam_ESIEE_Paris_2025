@@ -141,7 +141,12 @@ class Peon(Enemy):
 
         elif self.distance(self.target) > 50:
             no_side_movement = self.target.center_x == self.center_x
-            self.center_x += 1 if self.target.center_x > self.center_x else -1 if self.target.center_x < self.center_x else 0
+            if self.target.center_x > self.center_x:
+                self.center_x += 1
+                self.direction = Direction.RIGHT
+            if self.target.center_x < self.center_x:
+                self.center_x -= 1
+                self.direction = Direction.LEFT
             self.state = "walk"
             if self.target.center_y < self.center_y:
                 self.center_y -= random.uniform(0.1, 0.2) if not no_side_movement else 1
