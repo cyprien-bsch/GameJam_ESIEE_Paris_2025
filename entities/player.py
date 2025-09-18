@@ -40,7 +40,8 @@ class Player(arcade.Sprite):
         """Handle player death"""
         self.is_dead = True
         self.current_health = 0
-        self.alpha = 128  # Make player semi-transparent when dead
+        self.alpha = 0  # Make player semi-transparent when dead
+        
 
     def init_anim_frames(self):
         # Taille d'une frame
@@ -92,6 +93,8 @@ class Player(arcade.Sprite):
         self.current_health = self.max_health
         self.invincible_timer = 0
         self.heart_texture = arcade.load_texture("assets/images/Heart.png")
+        self.grave_texture = arcade.load_texture("assets/images/tombe.png") 
+       
         
         # Hit feedback system
         self.hit_flash_timer = 0.0
@@ -111,6 +114,7 @@ class Player(arcade.Sprite):
 
 
     def update(self, delta_time = None):
+         
         dt = delta_time if delta_time else 1/60
         move_x = self.change_x * dt
 
@@ -209,19 +213,34 @@ class Player(arcade.Sprite):
     
 
     def draw(self):
-        # Apply color tinting manually since we're using a custom draw method
+        if self.is_dead:
+            # Le joueur est mort : afficher seulement la tombe
+            tomb_width = self.width * 0.6
+            tomb_height = self.height * 0.6
+            arcade.draw_texture_rect(
+                self.grave_texture,
+                rect=arcade.LBWH(
+                    self.center_x - tomb_width / 2,
+                    self.center_y - tomb_height / 2,
+                    tomb_width,
+                    tomb_height
+                ),
+                angle=0,
+                alpha=255
+            )
+            return  # ne rien dessiner d'autre
+
+        # Sinon, le joueur est vivant : dessiner le sprite du joueur et les coeurs
         current_alpha = self.alpha if hasattr(self, 'alpha') else 255
         current_color = getattr(self, 'color', (255, 255, 255, 255))
-        
-        # Ensure color is in RGBA format
+
         if len(current_color) == 3:
             current_color = (*current_color, current_alpha)
         elif len(current_color) == 4:
             current_color = (*current_color[:3], current_alpha)
-        
-        # Convert to arcade.Color object which has the .normalized attribute
+
         color_obj = Color(*current_color)
-        
+
         arcade.draw_texture_rect(
             self.texture,
             rect=arcade.LBWH(
@@ -235,8 +254,6 @@ class Player(arcade.Sprite):
         )
 
         # Note: Hearts and coin counter are now drawn in the main window's draw method
-
-
 
 
     # --- Vie ---
