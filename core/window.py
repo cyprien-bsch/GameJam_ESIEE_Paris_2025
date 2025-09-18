@@ -20,6 +20,7 @@ class GameWindow(arcade.Window):
         self.enemies = [arcade.SpriteList(), arcade.SpriteList()]
         self.projectiles = [arcade.SpriteList(), arcade.SpriteList()]
         self.solid_decorations = arcade.SpriteList()
+        self.dragons = arcade.SpriteList()  # Add dragon list
         self.tile_map = None
         self.scene = None
         self.set_mouse_visible(True)
@@ -90,10 +91,16 @@ class GameWindow(arcade.Window):
 
         # 4) Spawn entities using the map manager
         self.spawned_entities = self.map_manager.spawn_entities(
-            self.player, self.knight, self.enemies
+            self.player, self.knight, self.enemies, self.dragons
         )
         
-        # 5) Initialize army spawner with spawner locations
+        # 5) Connect knight with dragons and dialogue manager for dragon dialogue
+        if len(self.knight) > 0:
+            knight_sprite = self.knight[0]
+            knight_sprite.dragons = self.dragons
+            knight_sprite.dialogue_manager = self.dialogue_manager
+        
+        # 6) Initialize army spawner with spawner locations
         spawner_locations = {name: entity for name, entity in self.spawned_entities.items() 
                            if hasattr(entity, 'spawn_type') and 'spawner' in entity.spawn_type}
         self.army_spawner = ArmySpawner(
@@ -101,7 +108,7 @@ class GameWindow(arcade.Window):
             screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT
         )
         
-        # 6) Create physics engine with the collision sprites
+        # 7) Create physics engine with the collision sprites
         try:
             if len(self.player) > 0 and isinstance(self.solid_decorations, arcade.SpriteList):
                 self.physics_engine = arcade.PhysicsEngineSimple(self.player[0], self.solid_decorations)
@@ -134,6 +141,7 @@ class GameWindow(arcade.Window):
             for p in self.player:
                 p.draw()
             self.knight.draw()
+            self.dragons.draw()  # Draw dragons
             for enemy_list in self.enemies:
                 enemy_list.draw()
             for projectile_list in self.projectiles:
@@ -387,6 +395,7 @@ class GameWindow(arcade.Window):
 
         self.player.update(dt)
         self.knight.update(dt)
+        self.dragons.update(dt)  # Update dragons
         self.dialogue_manager.update(dt)
         for enemy_list in self.enemies:
             enemy_list.update(dt)
