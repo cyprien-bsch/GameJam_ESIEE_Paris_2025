@@ -8,6 +8,7 @@ class Dialogue:
         self.char_timer = 0.0      # Temps écoulé depuis le dernier caractère
         self.char_speed = 0.05     # Temps entre chaque lettre (en secondes)
         self.dialogues = {}        # Dictionnaire pour stocker les dialogues par scène
+        self.text_object = None    # arcade.Text object for efficient drawing
 
     def set_dialogue(self, dialogue_lines):
         """Définit le dialogue à afficher (liste de lignes)."""
@@ -15,6 +16,8 @@ class Dialogue:
         self.dialogue_index = 0
         self.char_index = 0
         self.char_timer = 0.0
+        if self.text_object:
+            self.text_object.text = "" # Clear text object
 
     def start(self, key_or_lines):
         """Démarre un dialogue à partir d'une liste ou d'une clé (pour compatibilité)."""
@@ -37,6 +40,8 @@ class Dialogue:
                 if self.dialogue_index >= len(self.current_dialogue):
                     self.current_dialogue = []
                     self.dialogue_index = 0
+                    if self.text_object:
+                        self.text_object.text = ""
 
     def is_active(self):
         """Retourne True si un dialogue est actif."""
@@ -46,12 +51,16 @@ class Dialogue:
         """Met à jour l’affichage des lettres."""
         if not self.is_active():
             return
+        
+        current_line_text = self.current_dialogue[self.dialogue_index]
+        
         self.char_timer += delta_time
-        if self.char_timer >= self.char_speed:
+        if self.char_timer >= self.char_speed and self.char_index < len(current_line_text):
             self.char_index += 1
             self.char_timer = 0.0
-            if self.char_index > len(self.current_dialogue[self.dialogue_index]):
-                self.char_index = len(self.current_dialogue[self.dialogue_index])
+            # Update the text property of the Text object
+            if self.text_object:
+                self.text_object.text = current_line_text[:self.char_index]
 
     def _wrap_text(self, text, max_width, font_size):
         """Retourne le texte découpé en lignes pour ne pas dépasser la largeur max."""
@@ -110,19 +119,26 @@ class Dialogue:
         text_x = left + 15
         text_y = top - 25
         text_to_display = self.current_dialogue[self.dialogue_index][:self.char_index]
-        wrapped_lines = self._wrap_text(text_to_display, box_width - 30, 16)
-        
-        # Affichage du texte en noir sur fond blanc
-        for i, line in enumerate(wrapped_lines):
-            arcade.draw_text(
-                line,
-                text_x,
-                text_y - i * 22,
-                arcade.color.BLACK,
-                16,
-                width=box_width - 30,
-                align="left"
+
+        if not self.text_object:
+            self.text_object = arcade.Text(
+                text_to_display,
+                x=text_x,
+                y=text_y,
+                color=arcade.color.BLACK,
+                font_size=16,
+                font_name="Cloister Black",
+                width=int(box_width - 30),
+                multiline=True
             )
+        else:
+            # Ensure position and text are up-to-date
+            self.text_object.x = text_x
+            self.text_object.y = text_y
+            self.text_object.text = text_to_display
+
+        # Draw the text object
+        self.text_object.draw()
         
         # Indicateur de continuation (petit triangle en bas à droite)
         if self.char_index >= len(self.current_dialogue[self.dialogue_index]):

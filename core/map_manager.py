@@ -5,6 +5,7 @@ from entities.player import Player
 from entities.knight import Knight
 from entities.archer import Archer
 from entities.peon import Peon
+from entities.dragon import DragonSpawn
 
 
 class SpawnPoint:
@@ -30,6 +31,8 @@ class SpawnPoint:
             return "archer"
         elif "peon" in name_lower:
             return "peon"
+        elif "dragon" in name_lower:
+            return "dragon"
         else:
             return "unknown"
 
@@ -167,16 +170,22 @@ class MapManager:
                 print(f"Error parsing spawn object: {e}")
     
     def spawn_entities(self, player_list: arcade.SpriteList, knight_list: arcade.SpriteList, 
-                      enemies: List[arcade.SpriteList]) -> Dict[str, arcade.Sprite]:
+                      enemies: List[arcade.SpriteList], dragon_list: arcade.SpriteList = None) -> Dict[str, arcade.Sprite]:
         """Spawn entities at their designated spawn points."""
         spawned_entities = {}
+        
+        # Create dragon list if not provided
+        if dragon_list is None:
+            dragon_list = arcade.SpriteList()
         
         for name, spawn_point in self.spawn_points.items():
             try:
                 entity = None
                 
                 if spawn_point.spawn_type == "player":
-                    entity = Player(spawn_point.x, spawn_point.y, self.collision_sprites, enemies)
+                    # Include dragons in the enemy lists so player can broom them
+                    all_enemy_lists = enemies + ([dragon_list] if dragon_list else [])
+                    entity = Player(spawn_point.x, spawn_point.y, self.collision_sprites, all_enemy_lists)
                     entity.scale = 2
                     player_list.append(entity)
                     
@@ -184,6 +193,10 @@ class MapManager:
                     entity = Knight(spawn_point.x, spawn_point.y, self.collision_sprites, enemies)
                     entity.scale = 2
                     knight_list.append(entity)
+                    
+                elif spawn_point.spawn_type == "dragon":
+                    entity = DragonSpawn(spawn_point.x, spawn_point.y)
+                    dragon_list.append(entity)
                     
                 elif spawn_point.spawn_type in ["yellow_spawner", "red_spawner"]:
                     # These are spawner locations, not direct entity spawns
