@@ -34,6 +34,11 @@ class Knight(BaseCharacter):
         self.max_health = 20
         self.is_dead = False
         
+        # Dragon dialogue system
+        self.dragons = None  # Will be set by the game window
+        self.dialogue_manager = None  # Will be set by the game window
+        self.dragon_dialogue_triggered = False
+        
         # Deactivation system
         self.is_deactivated = False
         self.deactivation_timer = 0.0
@@ -52,10 +57,14 @@ class Knight(BaseCharacter):
         # Heart texture for health display
         self.heart_texture = arcade.load_texture("assets/images/Heart.png")
 
+        self.kill_streak = 0
+
     def take_damage(self, amount=1):
         """Handle taking damage and check for deactivation"""
         if self.is_dead or self.is_deactivated or self.invincible_timer > 0:
             return
+
+        self.mood = "attack"  # Switch to attack mode when hit
         
         self.current_health = max(0, self.current_health - amount)
         
@@ -253,6 +262,8 @@ class Knight(BaseCharacter):
         if self.is_dead:
             self.state = "idle"
             self.update_animation(delta_time)
+            # Check for nearby dragons and trigger dialogue
+            self.check_dragon_dialogue()
             self.current_step = 0
             self.steps_moved = 0
             return
@@ -283,9 +294,11 @@ class Knight(BaseCharacter):
                 self.attack_timer += delta_time
                 if self.attack_timer >= self.ATTACK_COOLDOWN:
                     target.die()
+                    self.kill_streak += 1
                     self.attack_timer = 0.0
-                    if random.random() < 0.5:  # 50% de chance de rester en mode attaque
-                        self.mood = "idle"
+                    if random.random() < 0.1:  # 90% de chance de rester en mode attaque
+                        self.mood = "walk"
+                        self.kill_streak = 0
             elif target:
                 
                 self.state = "walk"
@@ -302,6 +315,7 @@ class Knight(BaseCharacter):
                 self._move(self.direction, delta_time)
             else:
                 self.mood = "walk"
+                self.kill_streak = 0
 
         if self.mood == "walk":
             self.state = "walk"
@@ -324,6 +338,30 @@ class Knight(BaseCharacter):
                 self.mood = "idle"
         
         self.update_animation(delta_time)
+        
+        # Check for nearby dragons and trigger dialogue
+        self.check_dragon_dialogue()
+    
+    def check_dragon_dialogue(self):
+        """Check if there's a dragon nearby and trigger dialogue if needed"""
+        if (self.dragons is None or self.dialogue_manager is None or 
+            self.dragon_dialogue_triggered or self.dialogue_manager.is_active()):
+            return
+        
+        # Check if any dragon is nearby (within 100 pixels)
+        for dragon in self.dragons:
+            distance = ((self.center_x - dragon.center_x) ** 2 + 
+                       (self.center_y - dragon.center_y) ** 2) ** 0.5
+            if distance < 100:
+                # Trigger dialogue about cleaning the dragon
+                dialogue_lines = [
+                    "Knight: Squire! Look at this dragon...",
+                    "Knight: It's dead, but we need to clean it properly.",
+                    "Knight: Go wash it before we can proceed."
+                ]
+                self.dialogue_manager.start(dialogue_lines)
+                self.dragon_dialogue_triggered = True
+                break
 
     def draw(self):
         """Custom draw method to display knight with hearts in bottom left corner"""
