@@ -118,6 +118,8 @@ class GameWindow(arcade.Window):
         if len(self.player) > 0:
             player_sprite = self.player[0]
             player_sprite.item_manager = self.item_manager
+            # Set the player reference in the item manager for healing
+            self.item_manager.player = player_sprite
         
         # 7) Initialize army spawner with spawner locations
         spawner_locations = {name: entity for name, entity in self.spawned_entities.items() 
@@ -125,7 +127,7 @@ class GameWindow(arcade.Window):
         
         self.army_spawner = ArmySpawner(
             spawner_locations, self.enemies, self.projectiles, self.knight, self.player,
-            screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT, depth_manager=self.depth_manager
+            screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT, depth_manager=self.depth_manager, window=self
         )
         
         # 8) Add all sprites to depth manager for perspective sorting
@@ -497,10 +499,9 @@ class GameWindow(arcade.Window):
             player_sprite = self.player[0]
             # Pass camera position for off-screen spawning calculations
             camera_x, camera_y = self.camera.position
-            # print(f"DEBUG: Checking spawner proximity - Player: ({player_sprite.center_x:.1f}, {player_sprite.center_y:.1f})")
             self.army_spawner.check_proximity_and_activate(
                 player_sprite.center_x, player_sprite.center_y,
-                camera_x, camera_y
+                camera_x, camera_y, dt
             )
 
         
@@ -581,7 +582,6 @@ class GameWindow(arcade.Window):
                 self.map_manager.print_debug_info()
                 if self.army_spawner:
                     spawner_counts = self.army_spawner.get_spawner_count()
-                    print(f"Army spawners: {spawner_counts}")
                 return
                 
             if symbol == arcade.key.ESCAPE:

@@ -15,7 +15,7 @@ class Knight(BaseCharacter):
         self.center_y = y
         self.direction = Direction.RIGHT
         self.cell_size = 32
-        self.speed = 64
+        self.speed = 96
         self.solid_decorations = solid_decorations if solid_decorations is not None else arcade.SpriteList()  # Liste des obstacles
         self.path = [
             (Direction.RIGHT, 10),
@@ -305,7 +305,7 @@ class Knight(BaseCharacter):
             return
         
         if self.mood == "attack":
-            self.speed = 96
+            self.speed = 144
             target = self.nearest_target()
             if target and (\
                 (math.sqrt((self.center_x - target.center_x) ** 2 + (self.center_y - target.center_y) ** 2) < 50 and self.state == "attack") or \
@@ -348,12 +348,12 @@ class Knight(BaseCharacter):
 
         if self.mood == "walk":
             self.state = "walk"
-            self.speed = 64
+            self.speed = 96
             
             # Update random walk timer
             self.walk_timer -= delta_time
             if self.walk_timer <= 0:
-                # --- New logic to choose direction based on X position ---
+                # --- Modified logic to make knight mainly go up ---
                 map_center_x = 1400
                 
                 # Determine preferred horizontal direction
@@ -363,15 +363,22 @@ class Knight(BaseCharacter):
                 elif self.center_x > map_center_x + 200: # to create a small deadzone
                     preferred_x_direction = Direction.LEFT
 
-                # Build a weighted list of possible directions
-                possible_directions = [Direction.UP] # Always possible to go up
+                # Build a weighted list of possible directions with heavy UP bias
+                possible_directions = [Direction.UP] * 8  # Heavy weight for UP direction
+                possible_directions.append(Direction.DOWN)  # Small chance to go down
                 
                 if preferred_x_direction:
-                    # Add the preferred direction multiple times to increase its weight
-                    possible_directions.extend([preferred_x_direction] * 3) 
+                    # Add the preferred horizontal direction with less weight than UP
+                    possible_directions.extend([preferred_x_direction] * 2) 
+                    # Add diagonal up directions
+                    if preferred_x_direction == Direction.RIGHT:
+                        possible_directions.extend([Direction.UP_RIGHT] * 3)
+                    else:
+                        possible_directions.extend([Direction.UP_LEFT] * 3)
                 else:
-                    # If near the center, add left/right with normal weight
-                    possible_directions.extend([Direction.LEFT, Direction.RIGHT, Direction.UP_RIGHT, Direction.UP_LEFT])
+                    # If near the center, add left/right and diagonal up with normal weight
+                    possible_directions.extend([Direction.LEFT, Direction.RIGHT])
+                    possible_directions.extend([Direction.UP_RIGHT, Direction.UP_LEFT] * 2)
                 
                 self.direction = random.choice(possible_directions)
                 self.walk_timer = random.uniform(1.0, 3.0) # Walk for 1-3 seconds

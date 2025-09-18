@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="45" height="300" tilewidth="64" tileheight="64" infinite="0" nextlayerid="9" nextobjectid="149">
+<map version="1.10" tiledversion="1.11.2" orientation="orthogonal" renderorder="right-down" width="45" height="300" tilewidth="64" tileheight="64" infinite="0" nextlayerid="9" nextobjectid="166">
  <tileset firstgid="1" source="Tilemap_color3.tsx"/>
  <tileset firstgid="161" source="Tree1.tsx"/>
  <tileset firstgid="257" name="Rock4" tilewidth="64" tileheight="64" tilecount="1" columns="1">
@@ -1297,31 +1297,73 @@
   <object id="138" name="KnightSpawn" x="1350.67" y="17560">
    <point/>
   </object>
-  <object id="139" name="PlayerSpawn" x="1350" y="17769.3">
+  <object id="139" name="PlayerSpawn" x="1350" y="17793.3">
    <point/>
   </object>
   <object id="140" name="YellowSpawner" x="1517.76" y="8308.97">
    <point/>
   </object>
-  <object id="141" name="RedSpawner" x="1487.88" y="10138.1">
+  <object id="141" name="RedSpawner" x="1499.88" y="10818.1">
    <point/>
   </object>
-  <object id="143" name="RedSpawner" x="1452" y="17448">
+  <object id="143" name="RedSpawner" x="1768" y="17340">
    <point/>
   </object>
   <object id="144" name="DragonSpawn" x="1348" y="17400">
    <point/>
   </object>
-  <object id="145" name="RedSpawner" x="1416" y="16616">
+  <object id="145" name="RedSpawner" x="892" y="17204">
    <point/>
   </object>
-  <object id="146" name="RedSpawner" x="988" y="17124">
+  <object id="149" name="RedSpawner" x="1396" y="15952">
    <point/>
   </object>
-  <object id="147" name="RedSpawner" x="1852" y="16964">
+  <object id="150" name="YellowSpawner" x="1868" y="16332">
    <point/>
   </object>
-  <object id="148" name="RedSpawner" x="1748" y="16180">
+  <object id="151" name="RedSpawner" x="1268" y="14636">
+   <point/>
+  </object>
+  <object id="152" name="YellowSpawner" x="1824" y="14560">
+   <point/>
+  </object>
+  <object id="153" name="RedSpawner" x="1464" y="11616">
+   <point/>
+  </object>
+  <object id="154" name="YellowSpawner" x="1440" y="13692">
+   <point/>
+  </object>
+  <object id="155" name="RedSpawner" x="1948" y="11852">
+   <point/>
+  </object>
+  <object id="156" name="YellowSpawner" x="996" y="12792">
+   <point/>
+  </object>
+  <object id="157" name="YellowSpawner" x="1096" y="12020">
+   <point/>
+  </object>
+  <object id="158" name="YellowSpawner" x="1500" y="9988">
+   <point/>
+  </object>
+  <object id="159" name="YellowSpawner" x="1416" y="9968">
+   <point/>
+  </object>
+  <object id="160" name="YellowSpawner" x="1552" y="10036">
+   <point/>
+  </object>
+  <object id="161" name="RedSpawner" x="1676" y="10100">
+   <point/>
+  </object>
+  <object id="162" name="RedSpawner" x="1592" y="10112">
+   <point/>
+  </object>
+  <object id="163" name="RedSpawner" x="1492" y="10108">
+   <point/>
+  </object>
+  <object id="164" name="YellowSpawner" x="1216" y="13340">
+   <point/>
+  </object>
+  <object id="165" name="YellowSpawner" x="1564" y="13848">
    <point/>
   </object>
  </objectgroup>

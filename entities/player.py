@@ -10,7 +10,7 @@ class Player(arcade.Sprite):
         self.center_y = y
         self.change_x = 0
         self.change_y = 0
-        self.speed = 200
+        self.speed = 300
         self.solid_decorations = solid_decorations
         self.enemy_lists = enemy_lists
         self.is_brooming = False

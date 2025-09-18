@@ -106,8 +106,8 @@ class Peon(Enemy):
                 self.frame_index = 0
             self.texture = frames[self.frame_index]
 
-    def die(self):
-        super().die()
+    def die(self, item_manager=None):
+        super().die(item_manager)
 
     def sword_attack(self):
         if self.target is not None:
