@@ -16,6 +16,9 @@ class Peon(Enemy):
         self.scale = 0.5
         self.image = image
 
+        # Pre-load attack sounds
+        self.attack_sounds = [arcade.load_sound(f"assets/sounds/swordS{i}.mp3") for i in range(1, 7)]
+
         self.init_anim_frames()
 
     def init_anim_frames(self):
@@ -76,16 +79,33 @@ class Peon(Enemy):
         self.frame_time = 0.1
         self.texture = self.textures_dict[self.state][self.direction][0]
 
-    def update_animation(self, delta_time: float = 1/60):
+    def is_on_screen(self, camera_pos, screen_width, screen_height):
+        """Check if the peon is visible on screen."""
+        left_boundary = camera_pos[0] - screen_width / 2
+        right_boundary = camera_pos[0] + screen_width / 2
+        top_boundary = camera_pos[1] + screen_height / 2
+        bottom_boundary = camera_pos[1] - screen_height / 2
+
+        return (
+            self.right > left_boundary and
+            self.left < right_boundary and
+            self.top > bottom_boundary and
+            self.bottom < top_boundary
+        )
+
+    def update_animation(self, delta_time: float = 1/60, on_screen: bool = False):
         self.frame_time -= delta_time
         if self.frame_time <= 0:
             self.frame_time = 0.1
             self.frame_index += 1
             frames = self.textures_dict[self.state][self.direction]
+            if self.frame_index == 3 and self.state.startswith("attack") and on_screen:
+                # Play a random sword sound only if on screen
+                sound_to_play = random.choice(self.attack_sounds)
+                arcade.play_sound(sound_to_play)
             if self.frame_index >= len(frames):
                 self.frame_index = 0
             self.texture = frames[self.frame_index]
-
 
     def die(self):
         super().die()
@@ -100,10 +120,17 @@ class Peon(Enemy):
             else:
                 self.target.die()
 
-
-    def update(self, delta_time = None):
+    def update(self, delta_time=None, camera_pos=None, screen_width=None, screen_height=None):
         if self.is_dead:
             return
+        
+        on_screen = False
+        if camera_pos and screen_width and screen_height:
+            on_screen = self.is_on_screen(camera_pos, screen_width, screen_height)
+
+        if on_screen:
+            self.update_animation(delta_time, on_screen=on_screen)
+
         self.target = self.nearest_target()
         if self.target is None:
             self.state = "walk"
@@ -134,7 +161,5 @@ class Peon(Enemy):
                 self.state = "attack"
             self.attack_timer += 1
 
-        self.update_animation(delta_time)
-        
 
-    
+

@@ -29,10 +29,18 @@ class Knight(BaseCharacter):
         self.mood = "idle"  # "idle", "walk", "attack"
         self.attack_timer = 0.0
         self.ATTACK_COOLDOWN = 0.4  # secondes
+
+        # Attributes for random walking
+        self.walk_timer = 0.0
+        self.walk_duration = random.uniform(1.0, 3.0) # Time to walk in one direction
+
         self.init_anim_frames()
         self.current_health = 20
         self.max_health = 20
         self.is_dead = False
+
+        self.battlecry_sound = arcade.load_sound("assets/sounds/foward.mp3")
+        self.hit_sound = arcade.load_sound("assets/sounds/swordK.mp3")
         
         # Deactivation system
         self.is_deactivated = False
@@ -53,6 +61,8 @@ class Knight(BaseCharacter):
         self.heart_texture = arcade.load_texture("assets/images/Heart.png")
 
         self.kill_streak = 0
+
+        self.previous_direction = self.direction  # To handle corners
 
     def take_damage(self, amount=1):
         """Handle taking damage and check for deactivation"""
@@ -181,6 +191,13 @@ class Knight(BaseCharacter):
         if self.frame_time <= 0:
             self.frame_time = 0.1
             self.frame_index += 1
+
+            if self.state == "attack":
+                if self.frame_index == 1 and random.random() < 0.2:
+                    arcade.play_sound(self.battlecry_sound, volume=1.2)
+                if self.frame_index == 4 and random.random() < 0.5:
+                    arcade.play_sound(self.hit_sound, volume=1.5)
+
             frames = self.textures_dict[self.state][self.direction]
             if self.frame_index >= len(frames):
                 self.frame_index = 0
@@ -188,37 +205,42 @@ class Knight(BaseCharacter):
 
     def _move(self, direction: Direction, delta_time: float):
         """
-        Moves the sprite in a given direction with collision detection.
+        Moves the sprite with wall-following logic using previous_direction to avoid getting stuck.
         """
+        original_x = self.center_x
+        original_y = self.center_y
+
+        # Determine movement vector based on the intended direction
         dx, dy = 0, 0
-        if direction in [Direction.RIGHT, Direction.UP_RIGHT, Direction.DOWN_RIGHT]:
-            dx = 1
-        if direction in [Direction.LEFT, Direction.UP_LEFT, Direction.DOWN_LEFT]:
-            dx = -1
-        if direction in [Direction.UP, Direction.UP_RIGHT, Direction.UP_LEFT]:
-            dy = 1
-        if direction in [Direction.DOWN, Direction.DOWN_RIGHT, Direction.DOWN_LEFT]:
-            dy = -1
+        if direction in [Direction.RIGHT, Direction.UP_RIGHT, Direction.DOWN_RIGHT]: dx = 1
+        if direction in [Direction.LEFT, Direction.UP_LEFT, Direction.DOWN_LEFT]: dx = -1
+        if direction in [Direction.UP, Direction.UP_RIGHT, Direction.UP_LEFT]: dy = 1
+        if direction in [Direction.DOWN, Direction.DOWN_RIGHT, Direction.DOWN_LEFT]: dy = -1
 
-        # Normalize for diagonal movement to maintain constant speed
-        if dx != 0 and dy != 0:
-            norm = math.sqrt(2)
-            dx /= norm
-            dy /= norm
+        # Attempt primary movement
+        self.center_x += self.speed * delta_time * dx
+        self.center_y += self.speed * delta_time * dy
 
-        move_x = dx * self.speed * delta_time
-        move_y = dy * self.speed * delta_time
-
-        # Move with collision detection, if collision, revert and go 90 degrees
-        self.center_x += move_x
+        # --- Collision Handling ---
         if arcade.check_for_collision_with_list(self, self.solid_decorations):
-            self.center_x -= move_x
-            self._move(Direction.UP if dy == 0 else Direction.DOWN, delta_time)
+            # Revert primary movement
+            self.center_x = original_x
+            self.center_y = original_y
 
-        self.center_y += move_y
-        if arcade.check_for_collision_with_list(self, self.solid_decorations):
-            self.center_y -= move_y
-            self._move(Direction.LEFT if dx == 0 else Direction.RIGHT, delta_time)
+            # --- Secondary Movement (Wall Following) ---
+            # If we hit a wall while trying to go UP, and we were previously going LEFT, now try RIGHT.
+            if direction in [Direction.UP, Direction.UP_LEFT, Direction.UP_RIGHT] and self.previous_direction in [Direction.LEFT, Direction.UP_LEFT]:
+                self.center_x += self.speed * delta_time
+            
+            # If we hit a wall while trying to go UP, and we were previously going RIGHT, now try LEFT.
+            elif direction in [Direction.UP, Direction.UP_LEFT, Direction.UP_RIGHT] and self.previous_direction in [Direction.RIGHT, Direction.UP_RIGHT]:
+                self.center_x -= self.speed * delta_time
+
+            # If we hit a wall going LEFT or RIGHT, the default action is to try going UP.
+            elif direction in [Direction.LEFT, Direction.UP_LEFT, Direction.RIGHT, Direction.UP_RIGHT]:
+                self.previous_direction = direction
+                self._move(Direction.UP, delta_time)  # Recursive call to try moving UP
+
 
     def update(self, delta_time: float = 1/60):
         # Update hit feedback effects (similar to player)
@@ -293,7 +315,14 @@ class Knight(BaseCharacter):
                         self.mood = "walk"
                         self.kill_streak = 0
             elif target:
-                
+
+                #If too far, stop attacking
+                if math.sqrt((self.center_x - target.center_x) ** 2 + (self.center_y - target.center_y) ** 2) > 700:
+                    self.state = "walk"
+                    self.mood = "walk"
+                    self.kill_streak = 0
+                    return
+
                 self.state = "walk"
                 # Determine direction towards target
                 dx = target.center_x - self.center_x
@@ -313,17 +342,35 @@ class Knight(BaseCharacter):
         if self.mood == "walk":
             self.state = "walk"
             self.speed = 64
-            dir_target, steps_target = self.path[self.current_step]
-            self.direction = dir_target
+            
+            # Update random walk timer
+            self.walk_timer -= delta_time
+            if self.walk_timer <= 0:
+                # --- New logic to choose direction based on X position ---
+                map_center_x = 1400
+                
+                # Determine preferred horizontal direction
+                preferred_x_direction = None
+                if self.center_x < map_center_x - 200: # to create a small deadzone
+                    preferred_x_direction = Direction.RIGHT
+                elif self.center_x > map_center_x + 200: # to create a small deadzone
+                    preferred_x_direction = Direction.LEFT
+
+                # Build a weighted list of possible directions
+                possible_directions = [Direction.UP, Direction.DOWN] # Always possible to go up/down
+                
+                if preferred_x_direction:
+                    # Add the preferred direction multiple times to increase its weight
+                    possible_directions.extend([preferred_x_direction] * 3) 
+                else:
+                    # If near the center, add left/right with normal weight
+                    possible_directions.extend([Direction.LEFT, Direction.RIGHT, Direction.UP_RIGHT, Direction.UP_LEFT])
+                
+                self.direction = random.choice(possible_directions)
+                self.walk_timer = random.uniform(1.0, 3.0) # Walk for 1-3 seconds
 
             # Use the refactored move method
-            self._move(dir_target, delta_time)
-
-            # Compte des cases parcourues
-            self.steps_moved += self.speed * delta_time / self.cell_size
-            if self.steps_moved >= steps_target:
-                self.current_step += 1
-                self.steps_moved = 0
+            self._move(self.direction, delta_time)
 
             if random.random() < 0.005:  # 0.5% de chance par frame de changer d'état
                 self.mood = "attack"
@@ -356,4 +403,4 @@ class Knight(BaseCharacter):
                 alpha=255
             )
 
-        
+
