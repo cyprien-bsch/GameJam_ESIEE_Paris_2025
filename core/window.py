@@ -121,6 +121,7 @@ class GameWindow(arcade.Window):
         # 7) Initialize army spawner with spawner locations
         spawner_locations = {name: entity for name, entity in self.spawned_entities.items() 
                            if hasattr(entity, 'spawn_type') and 'spawner' in entity.spawn_type}
+        
         self.army_spawner = ArmySpawner(
             spawner_locations, self.enemies, self.projectiles, self.knight, self.player,
             screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT, depth_manager=self.depth_manager
@@ -465,16 +466,16 @@ class GameWindow(arcade.Window):
         if self.scene_manager:
             self.scene_manager.update(dt)
         
-        if self.phase == GamePhase.WAR_START:
-            # Use proximity-based army spawner activation with camera position
-            if self.army_spawner and len(self.player) > 0:
-                player_sprite = self.player[0]
-                # Pass camera position for off-screen spawning calculations
-                camera_x, camera_y = self.camera.position
-                self.army_spawner.check_proximity_and_activate(
-                    player_sprite.center_x, player_sprite.center_y,
-                    camera_x, camera_y
-                )
+        # Use proximity-based army spawner activation with camera position (no phase restriction)
+        if self.army_spawner and len(self.player) > 0:
+            player_sprite = self.player[0]
+            # Pass camera position for off-screen spawning calculations
+            camera_x, camera_y = self.camera.position
+            print(f"DEBUG: Checking spawner proximity - Player: ({player_sprite.center_x:.1f}, {player_sprite.center_y:.1f})")
+            self.army_spawner.check_proximity_and_activate(
+                player_sprite.center_x, player_sprite.center_y,
+                camera_x, camera_y
+            )
 
         
 
