@@ -5,15 +5,33 @@ from entities.animated_coin import AnimatedCoin
 class ItemManager:
     """Manages player inventory, coins, and item interactions."""
     
-    def __init__(self):
+    def __init__(self, player=None):
         self.coins = 0
         self.inventory = {}
         self.coin_sprites = arcade.SpriteList()
         self.coin_display_timer = {}  # Track coin display timers
+        self.player = player  # Reference to the player for healing
         
     def add_coins(self, amount: int):
-        """Add coins to the player's total."""
+        """Add coins to the player's total. Every 6 coins, reset count to 0 and heal player."""
         self.coins += amount
+        
+        # Check if we have 6 or more coins
+        if self.coins >= 6:
+            # Calculate how many HP points to restore (in case we get more than 6 coins at once)
+            hp_to_restore = self.coins // 6
+            
+            # Reset coins to remainder
+            self.coins = self.coins % 6
+            
+            # Heal the player if we have a reference to them
+            if self.player and hasattr(self.player, 'heal') and hasattr(self.player, 'current_health') and hasattr(self.player, 'max_health'):
+                # Only heal if not at max health
+                if self.player.current_health < self.player.max_health:
+                    self.player.heal(hp_to_restore)
+                    print(f"Player healed for {hp_to_restore} HP! Current health: {self.player.current_health}/{self.player.max_health}")
+                else:
+                    print(f"Player already at max health ({self.player.max_health}), coins reset but no healing applied.")
         
     def remove_coins(self, amount: int) -> bool:
         """Remove coins from the player's total. Returns True if successful."""

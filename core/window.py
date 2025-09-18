@@ -118,6 +118,8 @@ class GameWindow(arcade.Window):
         if len(self.player) > 0:
             player_sprite = self.player[0]
             player_sprite.item_manager = self.item_manager
+            # Set the player reference in the item manager for healing
+            self.item_manager.player = player_sprite
         
         # 7) Initialize army spawner with spawner locations
         spawner_locations = {name: entity for name, entity in self.spawned_entities.items() 

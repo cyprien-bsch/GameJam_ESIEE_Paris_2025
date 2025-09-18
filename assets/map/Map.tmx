@@ -1297,7 +1297,7 @@
   <object id="138" name="KnightSpawn" x="1350.67" y="17560">
    <point/>
   </object>
-  <object id="139" name="PlayerSpawn" x="1350" y="17769.3">
+  <object id="139" name="PlayerSpawn" x="1350" y="17793.3">
    <point/>
   </object>
   <object id="140" name="YellowSpawner" x="1517.76" y="8308.97">
@@ -1306,13 +1306,13 @@
   <object id="141" name="RedSpawner" x="1499.88" y="10818.1">
    <point/>
   </object>
-  <object id="143" name="RedSpawner" x="1452" y="17448">
+  <object id="143" name="RedSpawner" x="1768" y="17340">
    <point/>
   </object>
   <object id="144" name="DragonSpawn" x="1348" y="17400">
    <point/>
   </object>
-  <object id="145" name="RedSpawner" x="1348" y="17028">
+  <object id="145" name="RedSpawner" x="892" y="17204">
    <point/>
   </object>
   <object id="149" name="RedSpawner" x="1396" y="15952">
