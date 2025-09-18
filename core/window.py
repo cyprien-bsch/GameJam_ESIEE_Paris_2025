@@ -11,6 +11,7 @@ from core.game_phases import GamePhase, phase_length
 from core.scene_manager import SceneManager, GameScene
 from core.map_manager import MapManager
 from core.army_spawner import ArmySpawner
+from core.depth_manager import DepthManager
 
 class GameWindow(arcade.Window):
     def __init__(self, width, height, title):
@@ -39,6 +40,9 @@ class GameWindow(arcade.Window):
         # Map manager for handling map loading and spawning
         self.map_manager = MapManager(debug_mode=False)
         self.spawned_entities = {}
+        
+        # Depth manager for perspective sorting
+        self.depth_manager = DepthManager()
         
         # Initialize army spawner (will be set up after map loading)
         self.army_spawner = None
@@ -105,10 +109,18 @@ class GameWindow(arcade.Window):
                            if hasattr(entity, 'spawn_type') and 'spawner' in entity.spawn_type}
         self.army_spawner = ArmySpawner(
             spawner_locations, self.enemies, self.projectiles, self.knight, self.player,
-            screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT
+            screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT, depth_manager=self.depth_manager
         )
         
-        # 7) Create physics engine with the collision sprites
+        # 7) Add all sprites to depth manager for perspective sorting
+        self.depth_manager.clear()  # Clear any existing sprites
+        self.depth_manager.add_sprite_list(self.player)
+        self.depth_manager.add_sprite_list(self.knight)
+        self.depth_manager.add_sprite_list(self.dragons)
+        for enemy_list in self.enemies:
+            self.depth_manager.add_sprite_list(enemy_list)
+        
+        # 8) Create physics engine with the collision sprites
         try:
             if len(self.player) > 0 and isinstance(self.solid_decorations, arcade.SpriteList):
                 self.physics_engine = arcade.PhysicsEngineSimple(self.player[0], self.solid_decorations)
@@ -137,13 +149,10 @@ class GameWindow(arcade.Window):
             if hasattr(self.map_manager, 'debug_mode') and self.map_manager.debug_mode:
                 self.solid_decorations.draw()
             
-            self.player.draw()
-            for p in self.player:
-                p.draw()
-            self.knight.draw()
-            self.dragons.draw()  # Draw dragons
-            for enemy_list in self.enemies:
-                enemy_list.draw()
+            # Draw all sprites with depth sorting for perspective
+            self.depth_manager.draw()
+            
+            # Draw projectiles separately (they should always be on top)
             for projectile_list in self.projectiles:
                 projectile_list.draw()
             
