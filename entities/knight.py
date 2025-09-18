@@ -42,6 +42,11 @@ class Knight(BaseCharacter):
         self.battlecry_sound = arcade.load_sound("assets/sounds/foward.mp3")
         self.hit_sound = arcade.load_sound("assets/sounds/swordK.mp3")
         
+        # Dragon dialogue system
+        self.dragons = None  # Will be set by the game window
+        self.dialogue_manager = None  # Will be set by the game window
+        self.dragon_dialogue_triggered = False
+        
         # Deactivation system
         self.is_deactivated = False
         self.deactivation_timer = 0.0
@@ -279,6 +284,8 @@ class Knight(BaseCharacter):
         if self.is_dead:
             self.state = "idle"
             self.update_animation(delta_time)
+            # Check for nearby dragons and trigger dialogue
+            self.check_dragon_dialogue()
             self.current_step = 0
             self.steps_moved = 0
             return
@@ -378,6 +385,30 @@ class Knight(BaseCharacter):
                 self.mood = "idle"
         
         self.update_animation(delta_time)
+        
+        # Check for nearby dragons and trigger dialogue
+        self.check_dragon_dialogue()
+    
+    def check_dragon_dialogue(self):
+        """Check if there's a dragon nearby and trigger dialogue if needed"""
+        if (self.dragons is None or self.dialogue_manager is None or 
+            self.dragon_dialogue_triggered or self.dialogue_manager.is_active()):
+            return
+        
+        # Check if any dragon is nearby (within 100 pixels)
+        for dragon in self.dragons:
+            distance = ((self.center_x - dragon.center_x) ** 2 + 
+                       (self.center_y - dragon.center_y) ** 2) ** 0.5
+            if distance < 100:
+                # Trigger dialogue about cleaning the dragon
+                dialogue_lines = [
+                    "Knight: Squire! Look at this dragon...",
+                    "Knight: It's dead, but we need to clean it properly.",
+                    "Knight: Go wash it before we can proceed."
+                ]
+                self.dialogue_manager.start(dialogue_lines)
+                self.dragon_dialogue_triggered = True
+                break
 
     def draw(self):
         """Custom draw method to display knight with hearts in bottom left corner"""
