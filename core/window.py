@@ -12,6 +12,8 @@ from core.scene_manager import SceneManager, GameScene
 from core.map_manager import MapManager
 from core.army_spawner import ArmySpawner
 from core.depth_manager import DepthManager
+from core.item_manager import ItemManager
+from entities.animated_coin import AnimatedCoin
 
 class GameWindow(arcade.Window):
     def __init__(self, width, height, title):
@@ -22,6 +24,7 @@ class GameWindow(arcade.Window):
         self.projectiles = [arcade.SpriteList(), arcade.SpriteList()]
         self.solid_decorations = arcade.SpriteList()
         self.dragons = arcade.SpriteList()  # Add dragon list
+        self.coins = arcade.SpriteList()  # Add coin list for collectible coins
         self.tile_map = None
         self.scene = None
         self.set_mouse_visible(True)
@@ -44,10 +47,16 @@ class GameWindow(arcade.Window):
         # Depth manager for perspective sorting
         self.depth_manager = DepthManager()
         
+        # Create animated coin for UI display
+        self.ui_coin = AnimatedCoin(scale=0.5)  # Small scale for UI
+        
         # Initialize army spawner (will be set up after map loading)
         self.army_spawner = None
         self.out_of_view_timer = 0.0
         self.max_out_of_view_time = 15.0
+        
+        # Initialize item manager for coin collection
+        self.item_manager = ItemManager()
 
         # Gestionnaire UI
         self.ui_manager = UIManager()
@@ -104,7 +113,12 @@ class GameWindow(arcade.Window):
             knight_sprite.dragons = self.dragons
             knight_sprite.dialogue_manager = self.dialogue_manager
         
-        # 6) Initialize army spawner with spawner locations
+        # 6) Connect player with item manager for coin collection
+        if len(self.player) > 0:
+            player_sprite = self.player[0]
+            player_sprite.item_manager = self.item_manager
+        
+        # 7) Initialize army spawner with spawner locations
         spawner_locations = {name: entity for name, entity in self.spawned_entities.items() 
                            if hasattr(entity, 'spawn_type') and 'spawner' in entity.spawn_type}
         self.army_spawner = ArmySpawner(
@@ -112,15 +126,16 @@ class GameWindow(arcade.Window):
             screen_width=SCREEN_WIDTH, screen_height=SCREEN_HEIGHT, depth_manager=self.depth_manager
         )
         
-        # 7) Add all sprites to depth manager for perspective sorting
+        # 8) Add all sprites to depth manager for perspective sorting
         self.depth_manager.clear()  # Clear any existing sprites
         self.depth_manager.add_sprite_list(self.player)
         self.depth_manager.add_sprite_list(self.knight)
         self.depth_manager.add_sprite_list(self.dragons)
+        self.depth_manager.add_sprite_list(self.coins)  # Add coins to depth manager
         for enemy_list in self.enemies:
             self.depth_manager.add_sprite_list(enemy_list)
         
-        # 8) Create physics engine with the collision sprites
+        # 9) Create physics engine with the collision sprites
         try:
             if len(self.player) > 0 and isinstance(self.solid_decorations, arcade.SpriteList):
                 self.physics_engine = arcade.PhysicsEngineSimple(self.player[0], self.solid_decorations)
@@ -151,6 +166,59 @@ class GameWindow(arcade.Window):
             
             # Draw all sprites with depth sorting for perspective
             self.depth_manager.draw()
+            
+            # Draw coin displays from item manager
+            self.item_manager.draw_coin_displays()
+            
+            # Draw player UI (hearts and coin counter)
+            if len(self.player) > 0:
+                player = self.player[0]
+                # Draw hearts
+                spacing = 10   # space between hearts
+                offset_y = 10  # height above player
+                for i in range(player.current_health):
+                    arcade.draw_texture_rect(
+                        player.heart_texture,
+                        rect=arcade.LBWH(
+                            player.center_x - (player.current_health - 1) * spacing / 2 + i * spacing - 10,
+                            player.center_y + offset_y - 10,
+                            20, 20  # width, height of displayed heart
+                        ),
+                        angle=0,
+                        alpha=255
+                    )
+                
+                # Draw coin icon and counter above health (centered)
+                if player.item_manager:
+                    # Update animated coin position for UI - centered above hearts
+                    self.ui_coin.center_x = player.center_x
+                    self.ui_coin.center_y = player.center_y + offset_y + 25  # Above the hearts
+                    
+                    # Draw animated coin icon using arcade sprite draw
+                    if self.ui_coin.texture:
+                        coin_size = 16  # Fixed size for UI display
+                        arcade.draw_texture_rect(
+                            self.ui_coin.texture,
+                            rect=arcade.LBWH(
+                                self.ui_coin.center_x - coin_size/2,
+                                self.ui_coin.center_y - coin_size/2,
+                                coin_size,
+                                coin_size
+                            ),
+                            angle=0,
+                            alpha=255
+                        )
+                    
+                    # Draw coin count text next to the icon (centered above hearts)
+                    coin_text = f"{player.item_manager.coins}"
+                    arcade.draw_text(
+                        coin_text,
+                        player.center_x + 20,  # To the right of the centered coin icon
+                        player.center_y + offset_y + 20,  # Same level as the coin icon above hearts
+                        arcade.color.YELLOW,
+                        font_size=12,
+                        font_name="Arial"
+                    )
             
             # Draw projectiles separately (they should always be on top)
             for projectile_list in self.projectiles:
@@ -340,6 +408,14 @@ class GameWindow(arcade.Window):
                     player.take_damage(1)
                 for projectile in hit_projectiles:
                     projectile.remove_from_sprite_lists()
+            
+            # Check player collision with coins and collect them
+            hit_coins = arcade.check_for_collision_with_list(player, self.coins)
+            for coin in hit_coins:
+                coin_value = coin.collect()  # Get the coin value and remove it
+                self.item_manager.add_coins(coin_value)
+                # Spawn a coin display effect at the coin's location
+                self.item_manager.spawn_coin_display(coin.center_x, coin.center_y, coin_value)
         
         # Check knight collision with projectiles from both teams and remove them
         if len(self.knight) > 0:
@@ -361,7 +437,7 @@ class GameWindow(arcade.Window):
                 # Left enemies (team 0) can only be hit by right team projectiles (team 1)
                 hit_projectiles = [p for p in arcade.check_for_collision_with_list(left_enemy, self.projectiles[1]) if getattr(p, 'team', None) == 1]
                 if hit_projectiles:
-                    left_enemy.die()
+                    left_enemy.die(self.item_manager)
                     for projectile in hit_projectiles:
                         projectile.remove_from_sprite_lists()
                     
@@ -371,7 +447,7 @@ class GameWindow(arcade.Window):
                 # Right enemies (team 1) can only be hit by left team projectiles (team 0)
                 hit_projectiles = [p for p in arcade.check_for_collision_with_list(right_enemy, self.projectiles[0]) if getattr(p, 'team', None) == 0]
                 if hit_projectiles:
-                    right_enemy.die()
+                    right_enemy.die(self.item_manager)
                     for projectile in hit_projectiles:
                         projectile.remove_from_sprite_lists()
 
@@ -402,8 +478,16 @@ class GameWindow(arcade.Window):
 
 
 
+        # Update item manager (for coin displays)
+        self.item_manager.update(dt)
+        
+        # Update animated UI coin
+        self.ui_coin.update(dt)
+        
+        # Update all sprites
         self.player.update(dt)
         self.knight.update(dt)
+        self.coins.update(dt)  # Update coins
         self.dragons.update(dt)  # Update dragons
         self.dialogue_manager.update(dt)
         for enemy_list in self.enemies:

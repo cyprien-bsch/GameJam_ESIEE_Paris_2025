@@ -20,6 +20,9 @@ class Player(arcade.Sprite):
         self.brooming_enemy = None
         self.broom_timer = 0.0
         self.BROOM_TIME_TO_REMOVE = 1.0
+        
+        # Item manager reference (will be set by the game window)
+        self.item_manager = None
 
         # Health system
         self.max_health = 3
@@ -135,6 +138,12 @@ class Player(arcade.Sprite):
             if arcade.check_for_collision(self, self.brooming_enemy):
                 self.broom_timer += dt
                 if self.broom_timer >= self.BROOM_TIME_TO_REMOVE:
+                    # Drop coins when brooming enemy
+                    if self.item_manager:
+                        coin_value = 1
+                        self.item_manager.add_coins(coin_value)
+                        self.item_manager.spawn_coin_display(self.brooming_enemy.center_x, self.brooming_enemy.center_y, coin_value)
+                    
                     self.brooming_enemy.remove_from_sprite_lists()
                     self.brooming_enemy = None # Stop brooming
                     self.is_brooming = False # End the action
@@ -223,19 +232,7 @@ class Player(arcade.Sprite):
             color=color_obj
         )
 
-        spacing = 10   # espace entre les coeurs
-        offset_y = 10  # hauteur au-dessus du joueur
-        for i in range(self.current_health):
-            arcade.draw_texture_rect(
-                self.heart_texture,
-                rect=arcade.LBWH(
-                    self.center_x - (self.current_health - 1) * spacing / 2 + i * spacing - 10,
-                    self.center_y + offset_y - 10,
-                    20, 20  # largeur, hauteur du coeur affiché
-                ),
-                angle=0,
-                alpha=255
-            )
+        # Note: Hearts and coin counter are now drawn in the main window's draw method
 
 
 
