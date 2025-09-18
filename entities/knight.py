@@ -364,7 +364,7 @@ class Knight(BaseCharacter):
                     preferred_x_direction = Direction.LEFT
 
                 # Build a weighted list of possible directions
-                possible_directions = [Direction.UP, Direction.DOWN] # Always possible to go up/down
+                possible_directions = [Direction.UP] # Always possible to go up
                 
                 if preferred_x_direction:
                     # Add the preferred direction multiple times to increase its weight
