@@ -27,7 +27,7 @@ class Player(arcade.Sprite):
         self.is_dead = False
         self.init_anim_frames()
 
-        self.hit_sound = arcade.load_sound("assets/sounds/Hit.m4a")
+        self.hit_sound = arcade.load_sound("assets/sounds/Hit.wav")
         self.hit_sound_player = None
         
 
