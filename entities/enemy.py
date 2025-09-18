@@ -20,7 +20,7 @@ class Enemy(BaseCharacter):
         self.targets = targets if targets is not None else arcade.SpriteList()
         self.target_distance_limit = 500
         self.is_dead = False
-        self.speed = 60
+        self.speed = 90
 
     def die(self, item_manager=None):
         self.is_dead = True

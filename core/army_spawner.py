@@ -11,13 +11,14 @@ class ArmySpawner:
     
     def __init__(self, spawner_locations: Dict[str, any], enemies: List[arcade.SpriteList], 
                  projectiles: List[arcade.SpriteList], knight: arcade.SpriteList, player: arcade.SpriteList, 
-                 screen_width=600, screen_height=600, depth_manager=None):
+                 screen_width=600, screen_height=600, depth_manager=None, window=None):
         self.spawner_locations = spawner_locations
         self.enemies = enemies  # [red_team, yellow_team]
         self.projectiles = projectiles  # [red_projectiles, yellow_projectiles]
         self.knight = knight
         self.player = player
         self.depth_manager = depth_manager  # For perspective sorting
+        self.window = window
         
         # Spawning configuration
         self.spawn_rate = 0.02  # 2% chance per frame during war phase
@@ -26,7 +27,7 @@ class ArmySpawner:
         # Proximity-based activation settings
         self.screen_width = screen_width
         self.screen_height = screen_height
-        self.activation_distance = 2000.0  # Increased from default to make spawners easier to trigger
+        self.activation_distance = 500.0  # Distance in pixels to activate spawners
         self.activated_spawners = set()  # Track which spawners have been activated
         
         # Separate spawners by team
@@ -63,46 +64,44 @@ class ArmySpawner:
         return targets
     
     def check_proximity_and_activate(self, player_x, player_y, camera_x=None, camera_y=None):
-        """
-        Check if player is close enough to any spawner and activate it once.
+        """Check if player is close enough to any spawner to activate it."""
+        # Use camera position if provided, otherwise use player position
+        check_x = camera_x if camera_x is not None else player_x
+        check_y = camera_y if camera_y is not None else player_y
         
-        Args:
-            player_x: Player's current x position
-            player_y: Player's current y position
-            camera_x: Camera's current x position (optional, defaults to player_x)
-            camera_y: Camera's current y position (optional, defaults to player_y)
-        """
-        # Use player position as camera center if not provided
-        if camera_x is None:
-            camera_x = player_x
-        if camera_y is None:
-            camera_y = player_y
+        # Check all red spawners
+        for i, (spawner_x, spawner_y) in enumerate(self.red_spawners):
+            distance = ((check_x - spawner_x) ** 2 + (check_y - spawner_y) ** 2) ** 0.5
+            spawner_key = f"red_{spawner_x}_{spawner_y}"
             
-        # print(f"DEBUG: Checking proximity for {len(self.red_spawners + self.yellow_spawners)} spawners")
-        # print(f"DEBUG: Red spawners: {self.red_spawners}")
-        # print(f"DEBUG: Yellow spawners: {self.yellow_spawners}")
-        # print(f"DEBUG: Activation distance: {self.activation_distance}")
-        
-        for i, (spawner_x, spawner_y) in enumerate(self.red_spawners + self.yellow_spawners):
-            # Skip if this spawner was already activated
-            spawner_id = f"{spawner_x}_{spawner_y}"
-            if spawner_id in self.activated_spawners:
-                # print(f"DEBUG: Spawner {i} at ({spawner_x}, {spawner_y}) already activated")
-                continue
+            if distance <= self.activation_distance and spawner_key not in self.activated_spawners:
+                # print(f"ACTIVATED Red spawner at ({spawner_x:.1f}, {spawner_y:.1f})")
+                self._activate_spawner(spawner_x, spawner_y, check_x, check_y)
+                self.activated_spawners.add(spawner_key)
                 
-            # Calculate distance between player and spawner
-            distance = ((player_x - spawner_x) ** 2 + (player_y - spawner_y) ** 2) ** 0.5
-            # print(f"DEBUG: Spawner {i} at ({spawner_x}, {spawner_y}): distance = {distance:.1f}")
+            # Check if spawner should be deactivated (player moved too far away)
+            elif distance > self.activation_distance and spawner_key in self.activated_spawners:
+                self.activated_spawners.remove(spawner_key)
+                # print(f"DEACTIVATED Red spawner at ({spawner_x:.1f}, {spawner_y:.1f})")
+        
+        # Check all yellow spawners
+        for i, (spawner_x, spawner_y) in enumerate(self.yellow_spawners):
+            distance = ((check_x - spawner_x) ** 2 + (check_y - spawner_y) ** 2) ** 0.5
+            spawner_key = f"yellow_{spawner_x}_{spawner_y}"
             
-            # If player is close enough, activate this spawner once
-            if distance <= self.activation_distance:
-                # print(f"DEBUG: ACTIVATING spawner at ({spawner_x}, {spawner_y})!")
-                self.activated_spawners.add(spawner_id)
-                self._activate_spawner(spawner_x, spawner_y, camera_x, camera_y)
+            if distance <= self.activation_distance and spawner_key not in self.activated_spawners:
+                # print(f"ACTIVATED Yellow spawner at ({spawner_x:.1f}, {spawner_y:.1f})")
+                self._activate_spawner(spawner_x, spawner_y, check_x, check_y)
+                self.activated_spawners.add(spawner_key)
+                
+            # Check if spawner should be deactivated (player moved too far away)
+            elif distance > self.activation_distance and spawner_key in self.activated_spawners:
+                self.activated_spawners.remove(spawner_key)
+                # print(f"DEACTIVATED Yellow spawner at ({spawner_x:.1f}, {spawner_y:.1f})")
     
     def _activate_spawner(self, spawner_x, spawner_y, camera_x, camera_y):
         """
-        Activate a single spawner to generate units once.
+        Activate a single spawner and spawn units for the appropriate team.
         
         Args:
             spawner_x: X coordinate of the spawner
@@ -110,35 +109,27 @@ class ArmySpawner:
             camera_x: Camera's current x position
             camera_y: Camera's current y position
         """
-        # print(f"DEBUG: _activate_spawner called for ({spawner_x}, {spawner_y})")
-        
         # Determine which team this spawner belongs to
         if (spawner_x, spawner_y) in self.red_spawners:
             team = "red"
             enemy_list = self.enemies[0]  # Red team
-            # print(f"DEBUG: Activating RED spawner, enemy_list length: {len(enemy_list)}")
         else:
             team = "yellow"
             enemy_list = self.enemies[1]  # Yellow team
-            # print(f"DEBUG: Activating YELLOW spawner, enemy_list length: {len(enemy_list)}")
             
         # Spawn 8-15 units at off-screen locations
         import random
         num_units = random.randint(8, 15)
-        # print(f"DEBUG: Spawning {num_units} units for {team} team")
         
         # Calculate off-screen spawn positions
         spawn_positions = self._calculate_offscreen_positions(
             camera_x, camera_y, spawner_x, spawner_y, num_units
         )
-        # print(f"DEBUG: Calculated {len(spawn_positions)} spawn positions")
         
-        for i, spawn_pos in enumerate(spawn_positions):
+        for spawn_pos in spawn_positions:
             # Randomly choose unit type with different probabilities
             unit_type = self._choose_random_unit_type()
-            # print(f"DEBUG: Spawning unit {i+1}/{num_units}: {unit_type} at ({spawn_pos[0]:.1f}, {spawn_pos[1]:.1f})")
-            self._spawn_unit_for_team(team, enemy_list, [spawn_pos], unit_type)
-            # print(f"DEBUG: After spawning, enemy_list length: {len(enemy_list)}")
+            self._spawn_unit_for_team(team, enemy_list, [spawn_pos], unit_type, self.window)
     
     def _calculate_offscreen_positions(self, camera_x, camera_y, spawner_x, spawner_y, num_units):
         """
@@ -219,8 +210,67 @@ class ArmySpawner:
         """
         pass  # No longer spawn continuously
     
-    def _spawn_unit_for_team(self, team, enemy_list, spawners: List, unit_type=None):
-        """Spawn a unit for a specific team from one of their spawners."""
+    def _is_position_safe(self, x, y, window):
+        """
+        Check if a position is safe for spawning (not in collidable objects).
+        
+        Args:
+            x: X coordinate to check
+            y: Y coordinate to check
+            window: Game window instance for collision checking
+            
+        Returns:
+            bool: True if position is safe, False otherwise
+        """
+        # Create a temporary sprite to test collision
+        temp_sprite = arcade.Sprite()
+        temp_sprite.center_x = x
+        temp_sprite.center_y = y
+        temp_sprite.width = 32  # Typical unit size
+        temp_sprite.height = 32
+        
+        # Check collision with solid decorations and knights
+        return not window.is_in_collidable_objects(temp_sprite)
+    
+    def _find_safe_spawn_position(self, spawner_x, spawner_y, window, max_attempts=20):
+        """
+        Find a safe spawn position within a 300x300 area around the spawner.
+        
+        Args:
+            spawner_x: Spawner X coordinate
+            spawner_y: Spawner Y coordinate
+            window: Game window instance for collision checking
+            max_attempts: Maximum attempts to find a safe position
+            
+        Returns:
+            tuple: (x, y) coordinates of safe position, or original spawner position if none found
+        """
+        safe_area_size = 300
+        half_area = safe_area_size // 2
+        
+        for _ in range(max_attempts):
+            # Generate random position within 300x300 area around spawner
+            x = spawner_x + random.uniform(-half_area, half_area)
+            y = spawner_y + random.uniform(-half_area, half_area)
+            
+            if self._is_position_safe(x, y, window):
+                return x, y
+        
+        # If no safe position found, return spawner position (fallback)
+        return spawner_x, spawner_y
+
+    def _spawn_unit_for_team(self, team, enemy_list, spawners: List, unit_type=None, window=None):
+        """
+        Spawn a single unit for the specified team at a safe location within 300x300 area around spawner.
+        
+        Args:
+            team: Team identifier ("red" or "yellow")
+            enemy_list: The sprite list to add the new unit to
+            spawners: List of spawner positions [(x, y), ...]
+            unit_type: Optional unit type ("peon" or "archer"), randomly chosen if None
+            window: Game window instance for collision checking
+        """
+        
         if not spawners:
             return
         
@@ -243,39 +293,51 @@ class ArmySpawner:
             direction = Direction.LEFT
             warrior_image = "assets/images/Warrior_Red.png"
             archer_image = "assets/images/Archer_Red.png"
-            x_offset = 50  # Spawn slightly to the right of spawner
         else:  # Yellow team
             direction = Direction.RIGHT
             warrior_image = "assets/images/Warrior_Yellow.png"
             archer_image = "assets/images/Archer_Yellow.png"
-            x_offset = -50  # Spawn slightly to the left of spawner
+        
+        # Find safe spawn position within 300x300 area
+        if window:
+            final_x, final_y = self._find_safe_spawn_position(spawner[0], spawner[1], window)
+        else:
+            # Fallback to original logic if no window provided
+            x_offset = 50 if team == "red" else -50
+            final_x = spawner[0] + x_offset
+            final_y = spawner[1] + random.uniform(-30, 30)
         
         # Create and add the unit
-        if unit_type == "peon":
-            unit = Peon(
-                spawner[0] + x_offset, 
-                spawner[1] + random.uniform(-30, 30),  # Small random Y offset
-                direction, 
-                targets, 
-                image=warrior_image
-            )
-        else:  # archer
-            unit = Archer(
-                spawner[0] + x_offset, 
-                spawner[1] + random.uniform(-30, 30),  # Small random Y offset
-                direction, 
-                self.projectiles[team_index], 
-                targets, 
-                image=archer_image, 
-                team=team_index
-            )
-        
-        # Add to appropriate enemy list
-        enemy_list.append(unit)
-        
-        # Add to depth manager for perspective sorting
-        if self.depth_manager:
-            self.depth_manager.add_sprite(unit)
+        try:
+            if unit_type == "peon":
+                unit = Peon(
+                    final_x, 
+                    final_y,  # Small random Y offset
+                    direction, 
+                    targets, 
+                    image=warrior_image
+                )
+            else:  # archer
+                unit = Archer(
+                    final_x, 
+                    final_y,  # Small random Y offset
+                    direction, 
+                    self.projectiles[team_index], 
+                    targets, 
+                    image=archer_image, 
+                    team=team_index
+                )
+            
+            # Add to appropriate enemy list
+            enemy_list.append(unit)
+            
+            # Add to depth manager for perspective sorting
+            if hasattr(window, 'depth_manager') and window.depth_manager:
+                window.depth_manager.add_sprite(unit)
+                
+        except Exception as e:
+            import traceback
+            traceback.print_exc()
     
     def get_spawner_count(self) -> Dict[str, int]:
         """Get count of spawners by team for debugging."""

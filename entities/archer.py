@@ -12,7 +12,7 @@ from utils.animation import AnimationUtil
 class Archer(Enemy):
     def __init__(self, x: float, y: float, direction: Direction = Direction.LEFT, projectiles: arcade.SpriteList = None, targets: arcade.SpriteList = None, image: str = "assets/images/Archer_Red.png", team: int = 0):
         super().__init__(x, y, direction, projectiles, targets)
-        self.arrow_speed = random.uniform(4, 6)
+        self.arrow_speed = random.uniform(6, 9)
         self.shoot_delay = 72
         self.shoot_timer = 0
         self.scale = 0.5
@@ -70,8 +70,8 @@ class Archer(Enemy):
         self.frame_time = 0.2
         self.texture = self.textures_dict[self.state][self.direction][0]
 
-    def die(self):
-        super().die()
+    def die(self, item_manager=None):
+        super().die(item_manager)
         self.state = "idle"
         self.frame_index = 0
 

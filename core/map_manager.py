@@ -149,16 +149,20 @@ class MapManager:
                 x = float(obj.attrib.get("x", 0))
                 y = float(obj.attrib.get("y", 0))
                 obj_class = obj.attrib.get("class") or obj.attrib.get("type")
+                obj_id = obj.attrib.get("id", "")
                 
                 # Convert Tiled coordinates to Arcade coordinates
                 arcade_x = x
                 arcade_y = self.total_map_height_px - y
                 
-                spawn_point = SpawnPoint(name, arcade_x, arcade_y, obj_class)
-                self.spawn_points[name] = spawn_point
+                # Create unique key using name and ID to avoid overwrites
+                unique_key = f"{name}_{obj_id}" if obj_id else name
+                
+                spawn_point = SpawnPoint(unique_key, arcade_x, arcade_y, obj_class)
+                self.spawn_points[unique_key] = spawn_point
                 
                 if self.debug_mode:
-                    print(f"  Spawn point '{name}' ({spawn_point.spawn_type}): ({arcade_x}, {arcade_y})")
+                    print(f"  Spawn point '{unique_key}' ({spawn_point.spawn_type}): ({arcade_x}, {arcade_y})")
                     
                     # Create debug visualization for spawn points
                     debug_sprite = arcade.SpriteSolidColor(32, 32, color=(0, 255, 0, 180))
