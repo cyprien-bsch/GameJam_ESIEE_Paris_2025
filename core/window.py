@@ -183,6 +183,10 @@ class GameWindow(arcade.Window):
                     )
             
             if self.player[0].current_health <= 0:
+                arcade.draw_lrbt_rectangle_filled(
+                    0, self.width, 0, self.height,
+                    (0, 0, 0, 150)  # noir semi-transparent (alpha 150)
+                )
                 arcade.draw_text(
                     "GAME OVER",
                     self.width // 2, self.height // 2,
@@ -207,7 +211,7 @@ class GameWindow(arcade.Window):
             self.retry_button.on_click = self.start_game
             layout.add(self.retry_button)
             layout.center_x = self.width // 2 - 45
-            layout.center_y = self.height // 2 + 60
+            layout.center_y = self.height // 2 - 150
             self.ui_manager.add(layout)
             self._retry_layout = layout  # Pour pouvoir le retirer
 
