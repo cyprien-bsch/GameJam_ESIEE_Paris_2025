@@ -38,6 +38,7 @@ class GameWindow(arcade.Window):
         self.enemies = [arcade.SpriteList(), arcade.SpriteList()]
         #left and right projectiles 
         self.projectiles = [arcade.SpriteList(), arcade.SpriteList()]
+        self.items = arcade.SpriteList()
         self.solid_decorations = arcade.SpriteList()
         self.background = None
         self.set_mouse_visible(True)
@@ -97,6 +98,7 @@ class GameWindow(arcade.Window):
             for projectile_list in self.projectiles:
                 projectile_list.draw()
             
+            self.items.draw()
             self.solid_decorations.draw()
 
         with self.gui_camera.activate():

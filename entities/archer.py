@@ -6,8 +6,6 @@ import random
 from utils.animation import AnimationUtil
 
 
-
-
 class Archer(Enemy):
     def __init__(self, x: float, y: float, direction: Direction = Direction.LEFT, projectiles: arcade.SpriteList = None, targets: arcade.SpriteList = None, image: str = "assets/images/Archer_Red.png"):
         super().__init__(x, y, direction, projectiles, targets)

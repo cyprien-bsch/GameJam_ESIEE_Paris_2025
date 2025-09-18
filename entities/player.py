@@ -1,6 +1,7 @@
 import arcade
 from utils.animation import AnimationUtil
 from enum import Enum
+from utils.item import Coin
 
 class Direction(Enum):
     LEFT = "left"
@@ -95,7 +96,9 @@ class Player(arcade.Sprite):
             if arcade.check_for_collision(self, self.brooming_enemy):
                 self.broom_timer += dt
                 if self.broom_timer >= self.BROOM_TIME_TO_REMOVE:
+                    self.brooming_enemy.items.append(Coin())
                     self.brooming_enemy.remove_from_sprite_lists()
+
                     self.brooming_enemy = None # Stop brooming
                     self.is_brooming = False # End the action
                     self.state = "idle"

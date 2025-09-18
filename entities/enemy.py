@@ -4,6 +4,7 @@ from enum import Enum
 import random
 import math
 from entities.projectiles import Projectile
+from utils.item import Item
 
 class Direction(Enum):
     LEFT = 1
@@ -13,7 +14,7 @@ class Direction(Enum):
     TARGET = 5
 
 class Enemy(arcade.Sprite):
-    def __init__(self, x: float, y: float, direction: Direction = Direction.LEFT, projectiles: arcade.SpriteList = None, targets: arcade.SpriteList = None):
+    def __init__(self, x: float, y: float, direction: Direction = Direction.LEFT, items: Item = None, projectiles: arcade.SpriteList = None, targets: arcade.SpriteList = None):
         super().__init__(":resources:images/enemies/fishGreen.png", 1.0)
         self.center_x = x
         self.center_y = y
@@ -23,7 +24,9 @@ class Enemy(arcade.Sprite):
         self.projectiles = projectiles if projectiles is not None else arcade.SpriteList()
         self.targets = targets if targets is not None else arcade.SpriteList()
         self.target_distance_limit = 500
+        self.items = items
         self.is_dead = False
+        
 
     def die(self):
         self.is_dead = True
@@ -44,7 +47,7 @@ class Enemy(arcade.Sprite):
 
         for target in self.targets:
             current_distance = self.distance(target)
-            if (current_distance < minimal_distance):
+            if (current_distance < minimal_distance) and target.is_dead == False:
                 nearest_target = target
                 minimal_distance = current_distance
         
@@ -105,4 +108,3 @@ class Enemy(arcade.Sprite):
         
 
 
-    
