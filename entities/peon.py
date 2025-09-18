@@ -9,6 +9,7 @@ from utils.animation import AnimationUtil
 
 class Peon(Enemy):
     attack_sounds = [arcade.load_sound(f"assets/sounds/swordS{i}.mp3") for i in range(1, 7)]
+    textures_dict = None
     def __init__(self, x: float, y: float, direction: Direction = Direction.LEFT, targets: arcade.SpriteList = None, image: str = "assets/images/Warrior_Red.png"):
         super().__init__(x, y, direction, None, targets)
         self.target_distance_limit = 500
@@ -26,6 +27,15 @@ class Peon(Enemy):
         self.frame_height = 192
         self.columns = 6  # nombre de frames par ligne
         self.anim_types = ["idle", "walk", "attack", "", "attack_up", "_", "attack_down"] # une ligne par type d'animation
+
+        if Peon.textures_dict is not None:
+            self.textures_dict = Peon.textures_dict
+            # État initial
+            self.state = "idle"
+            self.frame_index = 0
+            self.frame_time = 0.1
+            self.texture = self.textures_dict[self.state][self.direction][0]
+            return
 
         # Chargement des textures (orientées vers la droite)
         right_facing_textures = AnimationUtil.load_textures_from_spritesheet(
@@ -71,6 +81,8 @@ class Peon(Enemy):
                 Direction.DOWN: left_facing_textures["attack_down"],
             }
         }
+
+        Peon.textures_dict = self.textures_dict  # Cache for future instances
 
         # État initial
         self.state = "idle"

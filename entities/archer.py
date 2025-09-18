@@ -11,6 +11,7 @@ from utils.animation import AnimationUtil
 
 class Archer(Enemy):
     shoot_sound = arcade.load_sound(f"assets/sounds/arrow-swish.mp3")
+    textures_dict = None
     def __init__(self, x: float, y: float, direction: Direction = Direction.LEFT, projectiles: arcade.SpriteList = None, targets: arcade.SpriteList = None, image: str = "assets/images/Archer_Red.png", team: int = 0):
         super().__init__(x, y, direction, projectiles, targets)
         self.arrow_speed = random.uniform(6, 9)
@@ -30,6 +31,15 @@ class Archer(Enemy):
         self.frame_height = 192
         self.columns = 6  # nombre de frames par ligne
         self.anim_types = ["idle", "walk", "shoot"] # une ligne par type d'animation
+
+        if Archer.textures_dict is not None:
+            self.textures_dict = Archer.textures_dict
+            # État initial
+            self.state = "idle"
+            self.frame_index = 0
+            self.frame_time = 0.2
+            self.texture = self.textures_dict[self.state][self.direction][0]
+            return
 
         # Chargement des textures (orientées vers la droite)
         right_facing_textures = AnimationUtil.load_textures_from_spritesheet(
@@ -63,6 +73,8 @@ class Archer(Enemy):
                 Direction.DOWN: left_facing_textures["shoot"],
             }
         }
+
+        Archer.textures_dict = self.textures_dict  # Cache for future instances
 
         # État initial
         self.state = "idle"
