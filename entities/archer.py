@@ -100,7 +100,13 @@ class Archer(Enemy):
         if self.target is not None and self.distance(self.target) > 300:
             self.state = "walk"
             self.update_animation(delta_time)
-            self.center_x += 1 if self.target.center_x > self.center_x else -1
+            if self.target.center_x > self.center_x:
+                self.direction = Direction.RIGHT
+                self.center_x += 1
+            elif self.target.center_x < self.center_x:
+                self.direction = Direction.LEFT
+                self.center_x -= 1
+
             if self.target.center_y < self.center_y:
                 self.center_y -= 1
             else:
