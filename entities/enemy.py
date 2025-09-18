@@ -22,9 +22,15 @@ class Enemy(BaseCharacter):
         self.is_dead = False
         self.speed = 60
 
-    def die(self):
+    def die(self, item_manager=None):
         self.is_dead = True
         self.alpha = 50
+        
+        # Drop coins when enemy dies
+        if item_manager:
+            coin_value = 1  # Each enemy drops 1 coin
+            item_manager.add_coins(coin_value)
+            item_manager.spawn_coin_display(self.center_x, self.center_y, coin_value)
         
 
 
